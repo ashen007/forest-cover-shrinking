@@ -1,0 +1,14 @@
+%0 Conference Paper
+%T ChangeNet: Learning to Detect Changes in Satellite Images
+%@ 9781450369572
+%U https://doi.org/10.1145/3356471.3365232
+%R 10.1145/3356471.3365232
+%B Proceedings of the 3rd ACM SIGSPATIAL International Workshop on AI for Geographic Knowledge Discovery
+%I Association for Computing Machinery
+%A Ying Chen
+%A Xu Ouyang
+%A Gady Agam
+%D 2019
+%P 24–31
+%K ChangeNet, satellite images, change detection, U-Net, GAN, DNN
+%C Chicago, IL, USA

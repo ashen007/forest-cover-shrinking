@@ -1,0 +1,17 @@
+TY  - JOUR
+AU  - Vo, Duc My
+AU  - Lee, Sang-Woong
+PY  - 2018
+DA  - 2018/07/01
+TI  - Semantic image segmentation using fully convolutional neural networks with multi-scale images and multi-scale dilated convolutions
+JO  - Multimedia Tools and Applications
+SP  - 18689
+EP  - 18707
+VL  - 77
+IS  - 14
+AB  - In this work, we investigate the effects of the cascade architecture of dilated convolutions and the deep network architecture of multi-resolution input images on the accuracy of semantic segmentation. We show that a cascade of dilated convolutions is not only able to efficiently capture larger context without increasing computational costs, but can also improve the localization performance. In addition, the deep network architecture for multi-resolution input images increases the accuracy of semantic segmentation by aggregating multi-scale contextual information. Furthermore, our fully convolutional neural network is coupled with a model of fully connected conditional random fields to further remove isolated false positives and improve the prediction along object boundaries. We present several experiments on two challenging image segmentation datasets, showing substantial improvements over strong baselines.
+SN  - 1573-7721
+UR  - https://doi.org/10.1007/s11042-018-5653-x
+DO  - 10.1007/s11042-018-5653-x
+ID  - Vo2018
+ER  - 
