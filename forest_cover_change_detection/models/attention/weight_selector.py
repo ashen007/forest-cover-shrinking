@@ -18,8 +18,6 @@ class WeightSelector(nn.Module):
                                  nn.Softmax(dim=1))
 
     def forward(self, x):
-        size = x.size()
-        x = x.view(*size[:2], -1)
         x = self.weight_selection(x)
 
         size = x.size()
