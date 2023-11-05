@@ -12,11 +12,11 @@ class Compile:
     compilation of the model
     """
 
-    def __init__(self, model, loss, optimizer, metrics=None, lr_scheduler=None):
+    def __init__(self, model, optimizer, metrics=None, lr_scheduler=None):
+        self.loss = None
         self.validation = None
         self.results = None
         self.model = model
-        self.loss = loss
         self.optimizer = optimizer
         self.metrics = metrics
         self.lr_scheduler = lr_scheduler
@@ -35,8 +35,9 @@ class Compile:
 
         return model_graph.visual_graph
 
-    def train(self, train_dataloader, epochs=1, val_dataloader=None):
+    def train(self, train_dataloader, loss, epochs=1, val_dataloader=None):
         self.validation = True if val_dataloader is not None else False
+        self.loss = loss
         self.results = train_loop(model=self.model,
                                   loss_func=self.loss,
                                   train_loader=train_dataloader,

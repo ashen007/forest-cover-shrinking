@@ -19,8 +19,10 @@ class WeightSelector(nn.Module):
         x = x.view(*size[:2], -1)  # shape [16, 9, 64]
         x_context = torch.mean(x, dim=1)  # shape [16, 64]
         x_context = torch.stack([x_context for _ in range(size[1])], dim=1)  # shape [16, 9, 64]
+        scores = self.weight(x, x_context)
+        weights = F.softmax(scores, dim=1)  # shape [16, 9, 1]
 
-        return self.weight(x, x_context)
+        return torch.sum(x * weights, dim=1)  # shape [16, 64]
 
 
 if __name__ == "__main__":

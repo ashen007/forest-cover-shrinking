@@ -23,8 +23,10 @@ class WeightSelector(nn.Module):
         x_context = torch.mean(x, dim=1)  # shape [16, 64]
         x_context = torch.stack([x_context for _ in range(size[1])], dim=1)  # shape [16, 9, 64]
         x_cont_combine = torch.cat((x, x_context), dim=2)
+        scores = self.v(self.relu(self.w(x_cont_combine)))
+        weights = F.softmax(scores, dim=1)  # shape [16, 9, 1]
 
-        return self.v(self.relu(self.w(x_cont_combine)))
+        return torch.sum(x * weights, dim=1)  # shape [16, 64]
 
 
 if __name__ == "__main__":

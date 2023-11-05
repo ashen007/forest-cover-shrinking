@@ -1,6 +1,7 @@
 import torch
 from torch import nn
-from forest_cover_change_detection.models.attention import FeatureExtractor, WeightSelector
+from forest_cover_change_detection.models.attention import FeatureExtractor
+from forest_cover_change_detection.models.attention.simple_score import WeightSelector
 
 
 class Combiner(nn.Module):
