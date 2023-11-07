@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/Forest Cover Change Detection.iml" filepath="$PROJECT_DIR$/.idea/Forest Cover Change Detection.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/Forest cover shrinking.iml" filepath="$PROJECT_DIR$/.idea/Forest cover shrinking.iml" />
     </modules>
   </component>
 </project>
