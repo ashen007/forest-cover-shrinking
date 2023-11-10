@@ -4,6 +4,9 @@ import numpy as np
 from tqdm import tqdm
 from PIL import Image
 
+ROOT = "../data/raw_data/"
+DST_ROOT = "../data/cleaned/"
+
 
 def get_dir_list(root: str) -> list:
     return os.listdir(root)
@@ -43,8 +46,6 @@ def do_cut(img: np.ndarray, mid_point: tuple, patch_size: tuple) -> np.ndarray:
 
 
 if __name__ == "__main__":
-    ROOT = "../data/raw_data/"
-    DST_ROOT = "../data/cleaned/"
     PATCH_SIZE = (480, 480)
     N_ANCHORS = 3
 
