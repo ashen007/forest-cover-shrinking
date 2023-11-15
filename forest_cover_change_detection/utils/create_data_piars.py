@@ -1,4 +1,3 @@
-# import csv
 import copy
 import os
 import pandas as pd
@@ -22,11 +21,11 @@ def sort_files(x: list) -> list:
     return [f"{i}.jpg" for i in sort_file_names]
 
 
-def create_dataset(x: list, y: list) -> list:
+def create_dataset(x: list, y: list, path: str) -> list:
     labeled_pairs = []
 
     for i in range(len(x)):
-        labeled_pairs.append((x[i], y[i]))
+        labeled_pairs.append((x[i][0], x[i][1], y[i], path))
 
     return labeled_pairs
 
@@ -44,14 +43,14 @@ def create_image_pairs(file_path: str) -> None:
         assert len(pair_list) == len(os.listdir(os.path.join(ROOT, dir, label_folder)))
 
         data_ = [(int(i.split('-a')[0].split('-')[1]),
-                  os.path.join(ROOT, dir, label_folder, i)) for i in os.listdir(os.path.join(ROOT, dir, label_folder))]
+                  os.path.join(dir, label_folder, i)) for i in os.listdir(os.path.join(ROOT, dir, label_folder))]
         df = pd.DataFrame(data_).sort_values(by=0)
 
-        data_labels += create_dataset(pair_list, df[1].values)
+        data_labels += create_dataset(pair_list, df[1].values, os.path.join(dir))
 
-    df = pd.DataFrame(data_labels)
+    df = pd.DataFrame(data_labels, columns=['img_1', 'img_2', 'label', 'dir'])
     df.to_csv(file_path, index=False)
 
 
 if __name__ == "__main__":
-    create_image_pairs('../../data/annotated/train.csv')
+    create_image_pairs('../../data/train.csv')
