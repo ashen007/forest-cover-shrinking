@@ -1,6 +1,5 @@
 import os.path
 import pandas as pd
-import torch
 import PIL
 
 from torchvision.transforms.functional import to_tensor
