@@ -8,22 +8,23 @@ import pandas as pd
 from tqdm import tqdm
 from torch.nn import ModuleList
 from torchvision.io import read_image, write_jpeg
-from torchvision.transforms import v2, RandomApply
+from torchvision.transforms import v2, Compose, RandomApply
 from pre_process.image_cut import get_dir_list
 
 
 class GenerateRandomAugmentationDataset:
     ROOT = "../data/annotated/"
-    TRANSFORMS = RandomApply(ModuleList([v2.ColorJitter(),
-                                         # v2.RandomPhotometricDistort(),
-                                         v2.GaussianBlur(15),
-                                         # v2.RandomInvert(),
-                                         # v2.RandomPosterize(2),
-                                         # v2.RandomSolarize(192),
-                                         v2.RandomAdjustSharpness(2),
-                                         v2.RandomAutocontrast()
-                                         ])
-                             )
+    TRANSFORMS = Compose([RandomApply([v2.ColorJitter(),
+                                       # v2.RandomPhotometricDistort(),
+                                       v2.GaussianBlur(15),
+                                       v2.RandomInvert(p=0.3)]
+                                      ),
+                          # v2.RandomPosterize(2),
+                          # v2.RandomSolarize(192),
+                          v2.RandomAdjustSharpness(2, p=0.6),
+                          v2.RandomAutocontrast(p=0.5)
+                          ]
+                         )
     DIRS = get_dir_list(ROOT)
 
     def __init__(self, annotation_file):
@@ -33,7 +34,7 @@ class GenerateRandomAugmentationDataset:
     def update_file_list(self, dir_path: str) -> None:
         self.file_list = self.annotated_dataset[self.annotated_dataset['dir'] == dir_path]
 
-    def apply_random_transformation(self, image, file_name, copies=2):
+    def apply_random_transformation(self, image, file_name, copies=5):
         trans_copies = {}
 
         for i in range(copies):

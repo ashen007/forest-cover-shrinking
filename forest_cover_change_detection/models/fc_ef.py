@@ -9,7 +9,7 @@ class FCFE(nn.Module):
     def __init__(self, in_channels, kernel, classes):
         super(FCFE, self).__init__()
 
-        self.config = [16, 32, 64, 128]
+        self.config = [32, 64, 128, 256]
         self.max_pooling = nn.MaxPool2d(2)
 
         # sub-sampling blocks
@@ -128,9 +128,9 @@ class FCFE(nn.Module):
 
 
 if __name__ == "__main__":
-    t = torch.randn(16, 6, 256, 256)
+    t = torch.randn(16, 6, 128, 128)
 
-    sub_sampling = FCFE(6, 3)
+    sub_sampling = FCFE(6, 3, classes=2)
     out = sub_sampling(t)
 
     print(out.shape)

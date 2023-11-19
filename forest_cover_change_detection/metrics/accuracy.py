@@ -22,3 +22,22 @@ def kappa(y_true, y_pred):
     pe = ((tp + fp) * (tp + fn) + (tn + fp) * (tn + fn)) / (N * N)
 
     return (p0 - pe) / (1 - pe)
+
+
+def precision(y_true, y_pred):
+    tp, tn, fp, fn = calculate_confusion(y_true, y_pred)
+
+    return tp / (tp + fp)
+
+
+def recall(y_true, y_pred):
+    tp, tn, fp, fn = calculate_confusion(y_true, y_pred)
+
+    return tp / (tp + fn)
+
+
+def dice(y_true, y_pred):
+    prec = precision(y_true, y_pred)
+    rec = recall(y_true, y_pred)
+
+    return 2 * prec * rec / (prec + rec)

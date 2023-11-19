@@ -28,25 +28,18 @@ class ChangeDetectionDataset(Dataset):
         img2_path = os.path.join(self.root, self.label_file.loc[idx, 'dir'], x_2)
         label_path = os.path.join(self.root, y)
 
-        x_1_img = io.read_image(img1_path)
-        x_2_img = io.read_image(img2_path)
-        y_img = io.read_image(label_path)
+        x_1_img = io.read_image(img1_path) / 255.0
+        x_2_img = io.read_image(img2_path) / 255.0
+        y_img = io.read_image(label_path) / 255.0
 
-        x_1_img, x_2_img, y_img = random_flip((x_1_img, x_2_img, y_img))
-        x_1_img, x_2_img, y_img = random_rotate((x_1_img, x_2_img, y_img))
-
-        if self.transformers is not None:
-            x_1_img = self.transformers(to_pil_image(x_1_img))
-            x_2_img = self.transformers(to_pil_image(x_2_img))
-
-        x_1_img = x_1_img / 255.0
-        x_2_img = x_2_img / 255.0
-        y_img = y_img.squeeze(0) / 255.0
+        x_1_img, x_2_img, y_img = random_crop((x_1_img, x_2_img, y_img))
+        y_img = y_img.squeeze(0)
+        x_1_img_, x_2_img_, y_img_ = random_flip((x_1_img, x_2_img, y_img))
 
         if self.concat:
-            x = torch.cat((x_1_img, x_2_img), dim=0)
+            x = torch.cat((x_1_img_, x_2_img_), dim=0)
 
-        return (x, y_img.long()) if self.concat else (x_1_img, x_2_img, y_img.long())
+        return (x, y_img_.long()) if self.concat else (x_1_img_, x_2_img_, y_img_.long())
 
 
 if __name__ == "__main__":
