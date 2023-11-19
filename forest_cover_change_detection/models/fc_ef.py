@@ -9,7 +9,7 @@ class FCFE(nn.Module):
     def __init__(self, in_channels, kernel, classes):
         super(FCFE, self).__init__()
 
-        self.config = [32, 64, 128, 256]
+        self.config = [16, 32, 64, 128]
         self.max_pooling = nn.MaxPool2d(2)
 
         # sub-sampling blocks

@@ -32,7 +32,13 @@ class ChangeDetectionDataset(Dataset):
         x_2_img = io.read_image(img2_path) / 255.0
         y_img = io.read_image(label_path) / 255.0
 
-        x_1_img, x_2_img, y_img = random_crop((x_1_img, x_2_img, y_img))
+        x_1_img = x_1_img[:, self.label_file.loc[idx, 'x1']:self.label_file.loc[idx, 'x2'],
+                  self.label_file.loc[idx, 'y1']:self.label_file.loc[idx, 'y2']]
+        x_2_img = x_2_img[:, self.label_file.loc[idx, 'x1']:self.label_file.loc[idx, 'x2'],
+                  self.label_file.loc[idx, 'y1']:self.label_file.loc[idx, 'y2']]
+        y_img = y_img[:, self.label_file.loc[idx, 'x1']:self.label_file.loc[idx, 'x2'],
+                self.label_file.loc[idx, 'y1']:self.label_file.loc[idx, 'y2']]
+
         y_img = y_img.squeeze(0)
         x_1_img_, x_2_img_, y_img_ = random_flip((x_1_img, x_2_img, y_img))
 
