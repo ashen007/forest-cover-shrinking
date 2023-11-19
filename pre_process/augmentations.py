@@ -15,11 +15,11 @@ from pre_process.image_cut import get_dir_list
 class GenerateRandomAugmentationDataset:
     ROOT = "../data/annotated/"
     TRANSFORMS = RandomApply(ModuleList([v2.ColorJitter(),
-                                         v2.RandomPhotometricDistort(),
+                                         # v2.RandomPhotometricDistort(),
                                          v2.GaussianBlur(15),
-                                         v2.RandomInvert(),
-                                         v2.RandomPosterize(2),
-                                         v2.RandomSolarize(192),
+                                         # v2.RandomInvert(),
+                                         # v2.RandomPosterize(2),
+                                         # v2.RandomSolarize(192),
                                          v2.RandomAdjustSharpness(2),
                                          v2.RandomAutocontrast()
                                          ])

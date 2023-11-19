@@ -130,9 +130,13 @@ def do_validation(model, optimizer, data_loader,
         run_epoch(model, optimizer, data_loader, loss_func, device, results, score_funcs, prefix, desc, epoch)
 
 
-def do_change_lr(lr_schedule):
+def do_change_lr(lr_schedule, results):
     if lr_schedule is not None:
-        lr_schedule.step()
+        if isinstance(lr_schedule, torch.optim.lr_scheduler.ReduceLROnPlateau):
+            lr_schedule.step(results["val loss"][-1])
+
+        else:
+            lr_schedule.step()
 
 
 def save_checkpoint(epoch, model, optimizer, results, checkpoint_file):
@@ -190,7 +194,7 @@ def train_loop(model, loss_func,
             do_validation(model, optimizer, test_loader, loss_func, device, results, score_funcs, prefix="test",
                           desc="Testing", epoch=epoch)
 
-        do_change_lr(lr_schedule)
+        do_change_lr(lr_schedule, results)
 
         save_checkpoint(epoch, model, optimizer, results, checkpoint_file)
 

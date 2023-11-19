@@ -4,8 +4,8 @@ import torch
 
 from torchvision.transforms.functional import to_pil_image
 from torchvision import io
-from torchvision.transforms import v2, ToTensor
 from torch.utils.data import Dataset, DataLoader
+from pre_process.run_time_augmentation import *
 
 
 class ChangeDetectionDataset(Dataset):
@@ -32,32 +32,29 @@ class ChangeDetectionDataset(Dataset):
         x_2_img = io.read_image(img2_path)
         y_img = io.read_image(label_path)
 
+        x_1_img, x_2_img, y_img = random_flip((x_1_img, x_2_img, y_img))
+        x_1_img, x_2_img, y_img = random_rotate((x_1_img, x_2_img, y_img))
+
         if self.transformers is not None:
             x_1_img = self.transformers(to_pil_image(x_1_img))
             x_2_img = self.transformers(to_pil_image(x_2_img))
 
         x_1_img = x_1_img / 255.0
         x_2_img = x_2_img / 255.0
-        y_img = y_img / 255.0
+        y_img = y_img.squeeze(0) / 255.0
 
-        return (torch.cat((x_1_img, x_2_img), dim=0), y_img.type(torch.FloatTensor)) \
-            if self.concat else (x_1_img, x_2_img, y_img.type(torch.FloatTensor))
+        if self.concat:
+            x = torch.cat((x_1_img, x_2_img), dim=0)
+
+        return (x, y_img.long()) if self.concat else (x_1_img, x_2_img, y_img.long())
 
 
 if __name__ == "__main__":
-    train_transform = v2.Compose([v2.ColorJitter(brightness=.5, hue=.3),
-                                  v2.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5.)),
-                                  v2.RandomInvert()
-                                  ])
     data_set = ChangeDetectionDataset('../../data/annotated',
                                       '../../data/train.csv',
-                                      # train_transform
                                       )
     data_loader = DataLoader(data_set, batch_size=8, shuffle=True)
     x, y = next(iter(data_loader))
 
-    # print(type(x_1), x_1.shape)
-    # print(type(x_2), x_2.shape)
     print(type(x), x.shape)
     print(type(y), y.shape)
-    print(data_set[0][0].shape)

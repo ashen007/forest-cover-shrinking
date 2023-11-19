@@ -73,5 +73,5 @@ class RandomCropWithMask(GenerateRandomAugmentationDataset):
 
 
 if __name__ == "__main__":
-    generator = RandomCropWithMask('../data/new_train.csv')
+    generator = RandomCropWithMask('../data/train.csv')
     generator.do_transformation()
