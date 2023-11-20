@@ -35,7 +35,7 @@ class Compile:
 
         return model_graph.visual_graph
 
-    def train(self, train_dataloader, loss, epochs=1, val_dataloader=None):
+    def train(self, train_dataloader, loss, epochs=1, val_dataloader=None, multi_in=False):
         self.validation = True if val_dataloader is not None else False
         self.loss = loss
         self.results = train_loop(model=self.model,
@@ -47,7 +47,8 @@ class Compile:
                                   epochs=epochs,
                                   device=self.device,
                                   optimizer=self.optimizer,
-                                  lr_schedule=self.lr_scheduler
+                                  lr_schedule=self.lr_scheduler,
+                                  multi_in=multi_in
                                   )
         return self.results
 

@@ -67,7 +67,7 @@ class ChangeDetectionDataset(Dataset):
         if self.concat:
             x = torch.cat((x_1_img_, x_2_img_), dim=0)
 
-        return (x, y_img_.long()) if self.concat else (x_1_img_, x_2_img_, y_img_.long())
+        return (x, y_img_.long()) if self.concat else ((x_1_img_, x_2_img_), y_img_.long())
 
 
 if __name__ == "__main__":
