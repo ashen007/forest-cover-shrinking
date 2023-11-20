@@ -10,7 +10,7 @@ from torchvision.io import read_image
 
 def create_patches():
     IMG_SIZE = (3, 480, 480)
-    PATCH_SIDE = 96
+    PATCH_SIDE = 256
     STRIDE = (PATCH_SIDE // 2) - 1
     N_PIX = 0
     TRUE_PIX = 0
