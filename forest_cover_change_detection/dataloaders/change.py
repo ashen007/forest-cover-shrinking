@@ -1,19 +1,32 @@
+import warnings
+
+warnings.filterwarnings(action='ignore')
+
 import os.path
 import pandas as pd
 import torch
 
-from torchvision.transforms.functional import to_pil_image
+from torchvision.transforms import v2
+from torchvision.transforms.v2 import Compose, RandomApply
 from torchvision import io
 from torch.utils.data import Dataset, DataLoader
 from pre_process.run_time_augmentation import *
 
 
 class ChangeDetectionDataset(Dataset):
+    TRANSFORMS = Compose([RandomApply([v2.ColorJitter(),
+                                       v2.GaussianBlur(29),
+                                       # v2.RandomInvert(p=0.3)
+                                       ]),
+                          v2.RandomAdjustSharpness(2, p=0.6),
+                          v2.RandomAutocontrast(p=0.5)
+                          ]
+                         )
 
-    def __init__(self, root_dir, annotation_file, transformers=None, concat=True, patched=True):
+    def __init__(self, root_dir, annotation_file, transformation=True, concat=True, patched=True):
         self.root = root_dir
         self.label_file = pd.read_csv(annotation_file)
-        self.transformers = transformers
+        self.transformation = transformation
         self.concat = concat
         self.patched = patched
 
@@ -46,6 +59,10 @@ class ChangeDetectionDataset(Dataset):
 
         y_img = y_img.squeeze(0)
         x_1_img_, x_2_img_, y_img_ = random_flip((x_1_img, x_2_img, y_img))
+
+        if self.transformation:
+            x_1_img_ = self.TRANSFORMS(x_1_img_)
+            x_2_img_ = self.TRANSFORMS(x_2_img_)
 
         if self.concat:
             x = torch.cat((x_1_img_, x_2_img_), dim=0)

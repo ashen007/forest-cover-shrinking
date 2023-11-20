@@ -58,13 +58,13 @@ def do_training(*, model, optimizer, inputs, labels, loss_func):
 
 def run_epoch(model, optimizer, data_loader,
               loss_func, device, results,
-              score_funcs, prefix="", desc=None, keep=False, epoch=None):
+              score_funcs, prefix="", desc=None, epoch=None):
     running_loss = []
     y_true = []
     y_pred = []
     start = time.time()
 
-    for inputs, labels in tqdm(data_loader, desc=desc, leave=keep):
+    for inputs, labels in data_loader:
         # Move the batch to the device we are using.
         inputs = move_to(inputs, device)
         labels = move_to(labels, device)
@@ -151,7 +151,7 @@ def save_checkpoint(epoch, model, optimizer, results, checkpoint_file):
 def train_loop(model, loss_func,
                train_loader, test_loader=None, val_loader=None,
                score_funcs=None, epochs=50, device="cpu",
-               optimizer=None, lr_schedule=None, checkpoint_file="last-checkpoint.pth", keep=True):
+               optimizer=None, lr_schedule=None, checkpoint_file="last-checkpoint.pth", keep_best=True):
     if score_funcs is None:
         score_funcs = {}
 
@@ -176,8 +176,11 @@ def train_loop(model, loss_func,
     # Place the model on the correct computed resource (CPU or GPU)
     model.to(device)
 
-    for epoch in tqdm(range(epochs), desc="Epoch", leave=keep):
+    for epoch in tqdm(range(epochs), desc="Epoch"):
         model = model.train()  # Put our model in training mode
+
+        # epoch number
+        print(f"Epoch: {epoch}/{epochs}")
 
         run_epoch(model, optimizer, train_loader, loss_func, device, results, score_funcs,
                   prefix="train", desc="Training")
@@ -197,6 +200,9 @@ def train_loop(model, loss_func,
         do_change_lr(lr_schedule, results)
 
         save_checkpoint(epoch, model, optimizer, results, checkpoint_file)
+
+        if keep_best:
+            checkpointer(results["val loss"][-1], epoch, model, optimizer)
 
     if del_opt:
         del optimizer
