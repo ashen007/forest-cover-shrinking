@@ -23,7 +23,7 @@ def create_patches():
     for idx, row in tqdm(NAMES.iterrows()):
         patch_coords = []
         row_values = [row.img_1, row.img_2, row.label, row.dir]
-        label = read_image(os.path.join(ROOT, row.label)).squeeze(0)
+        label = read_image(os.path.join(ROOT, row.label)).squeeze(0).numpy() != 0
 
         s = label.shape
         N_PIX += np.prod(s)
@@ -48,9 +48,11 @@ def create_patches():
 
         NEW_NAMES = pd.concat((NEW_NAMES, new_names), axis=0)
 
-    weights = [10 * 2 * TRUE_PIX / N_PIX, 2 * (N_PIX - TRUE_PIX) / N_PIX]
+    weights = [1 * 2 * TRUE_PIX / N_PIX, 2 * (N_PIX - TRUE_PIX) / N_PIX]
+    print(TRUE_PIX, N_PIX, weights)
+
     NEW_NAMES.to_csv("../data/patch_train.csv", index=False)
-    torch.save(weights, "../data/class_weight.pt")
+    torch.save(torch.FloatTensor(weights).cuda(), "../data/class_weight.pt")
 
 
 if __name__ == "__main__":

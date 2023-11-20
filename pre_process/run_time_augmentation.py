@@ -3,7 +3,7 @@ import numpy as np
 
 from torchvision.transforms.v2 import RandomCrop
 
-transformer = RandomCrop(256)
+transformer = RandomCrop(128)
 
 
 def random_flip(images):
