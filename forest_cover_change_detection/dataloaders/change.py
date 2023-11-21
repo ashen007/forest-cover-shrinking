@@ -6,22 +6,22 @@ import os.path
 import pandas as pd
 import torch
 
-from torchvision.transforms import v2
-from torchvision.transforms.v2 import Compose, RandomApply
+from torchvision.transforms.v2 import Compose
 from torchvision import io
 from torch.utils.data import Dataset, DataLoader
 from pre_process.run_time_augmentation import *
+from pre_process.apply_same_effect import *
 
 
 class ChangeDetectionDataset(Dataset):
-    TRANSFORMS = Compose([RandomApply([v2.ColorJitter(),
-                                       v2.GaussianBlur(29),
-                                       # v2.RandomInvert(p=0.3)
-                                       ]),
-                          v2.RandomAdjustSharpness(2, p=0.6),
-                          v2.RandomAutocontrast(p=0.5)
-                          ]
-                         )
+    TRANSFORMS = Compose([ColorJitter(0.5, (0.5, 1.5)),
+                          GaussianBlur(19, 0.5),
+                          RandomInvert(0.5),
+                          RandomEqualize(0.5),
+                          RandomAdjustSharpness(2, 0.5),
+                          # TODO: resolve this issue with rotation
+                          # RandomRotation(25, 0.5)
+                          ])
 
     def __init__(self, root_dir, annotation_file, transformation=True, concat=True, patched=True):
         self.root = root_dir
@@ -61,8 +61,7 @@ class ChangeDetectionDataset(Dataset):
         x_1_img_, x_2_img_, y_img_ = random_flip((x_1_img, x_2_img, y_img))
 
         if self.transformation:
-            x_1_img_ = self.TRANSFORMS(x_1_img_)
-            x_2_img_ = self.TRANSFORMS(x_2_img_)
+            x_1_img_, x_2_img_, y_img_ = self.TRANSFORMS((x_1_img_, x_2_img_, y_img_))
 
         if self.concat:
             x = torch.cat((x_1_img_, x_2_img_), dim=0)
@@ -72,11 +71,13 @@ class ChangeDetectionDataset(Dataset):
 
 if __name__ == "__main__":
     data_set = ChangeDetectionDataset('../../data/annotated',
-                                      '../../data/patch_train.csv',
-                                      patched=False
+                                      '../../data/train.csv',
+                                      patched=False,
+                                      concat=False
                                       )
     data_loader = DataLoader(data_set, batch_size=8, shuffle=True)
     x, y = next(iter(data_loader))
 
-    print(type(x), x.shape)
+    print(type(x[0]), x[0].shape)
+    print(type(x[1]), x[1].shape)
     print(type(y), y.shape)
