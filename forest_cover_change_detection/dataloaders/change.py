@@ -19,8 +19,7 @@ class ChangeDetectionDataset(Dataset):
                           RandomInvert(0.5),
                           RandomEqualize(0.5),
                           RandomAdjustSharpness(2, 0.5),
-                          # TODO: resolve this issue with rotation
-                          # RandomRotation(25, 0.5)
+                          RandomRotation(15, 0.5)
                           ])
 
     def __init__(self, root_dir, annotation_file, transformation=True, concat=True, patched=True):

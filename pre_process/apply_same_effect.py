@@ -112,8 +112,8 @@ class RandomRotation(object):
 
         if np.random.random() > self.p:
             by = np.random.uniform(-self.angle, self.angle)
-            img1 = rotate(img1, by)
-            img2 = rotate(img2, by)
-            label = rotate(label, by)
+            img1 = rotate(img1.unsqueeze(0), by)
+            img2 = rotate(img2.unsqueeze(0), by)
+            label = rotate(label.unsqueeze(0), by)
 
-        return img1, img2, label
+        return img1.squeeze(0), img2.squeeze(0), label.squeeze(0)
