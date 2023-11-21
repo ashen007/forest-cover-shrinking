@@ -11,7 +11,7 @@ class ColorJitter(object):
     def __init__(self, p: float, factor: tuple):
         self.p = p
         self.factor = random.uniform(factor[0], factor[1])
-        self.order = ['bri', 'sat', 'hue', 'cont']
+        self.order = ['bri', 'cont'] # 'sat', 'hue'
 
     def __call__(self, sample, *args, **kwargs):
         img1, img2, label = sample
@@ -103,17 +103,16 @@ class RandomAdjustSharpness(object):
 
 class RandomRotation(object):
 
-    def __init__(self, angle, p):
-        self.angle = angle
+    def __init__(self, p):
         self.p = p
 
     def __call__(self, sample, *args, **kwargs):
         img1, img2, label = sample
 
         if np.random.random() > self.p:
-            by = np.random.uniform(-self.angle, self.angle)
-            img1 = rotate(img1.unsqueeze(0), by)
-            img2 = rotate(img2.unsqueeze(0), by)
-            label = rotate(label.unsqueeze(0), by)
+            by = np.random.randint(0, 3)
+            img1 = torch.rot90(img1, by, dims=(1, 2))
+            img2 = torch.rot90(img2, by, dims=(1, 2))
+            label = torch.rot90(label, by, dims=(0, 1))
 
         return img1.squeeze(0), img2.squeeze(0), label.squeeze(0)

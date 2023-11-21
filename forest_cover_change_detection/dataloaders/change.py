@@ -14,13 +14,14 @@ from pre_process.apply_same_effect import *
 
 
 class ChangeDetectionDataset(Dataset):
-    TRANSFORMS = Compose([ColorJitter(0.5, (0.5, 1.5)),
-                          GaussianBlur(19, 0.5),
-                          RandomInvert(0.5),
-                          RandomEqualize(0.5),
-                          RandomAdjustSharpness(2, 0.5),
-                          RandomRotation(15, 0.5)
-                          ])
+    TRANSFORMS = Compose([
+        ColorJitter(0.5, (1.0, 2.0)),
+        GaussianBlur(19, 0.5),
+        # RandomInvert(0.5),
+        # RandomEqualize(0.5),
+        RandomAdjustSharpness(2, 0.5),
+        RandomRotation(0.5)
+    ])
 
     def __init__(self, root_dir, annotation_file, transformation=True, concat=True, patched=True):
         self.root = root_dir
