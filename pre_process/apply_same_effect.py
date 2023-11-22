@@ -1,7 +1,6 @@
 import random
-import numpy as np
-import torch
 
+from torchvision.io import read_image, write_jpeg
 from torchvision.transforms.v2 import GaussianBlur
 from torchvision.transforms.functional import *
 
@@ -11,7 +10,7 @@ class ColorJitter(object):
     def __init__(self, p: float, factor: tuple):
         self.p = p
         self.factor = random.uniform(factor[0], factor[1])
-        self.order = ['bri', 'cont'] # 'sat', 'hue'
+        self.order = ['bri', 'cont']  # 'sat', 'hue'
 
     def __call__(self, sample, *args, **kwargs):
         img1, img2, label = sample
@@ -116,3 +115,14 @@ class RandomRotation(object):
             label = torch.rot90(label, by, dims=(0, 1))
 
         return img1.squeeze(0), img2.squeeze(0), label.squeeze(0)
+
+
+if __name__ == "__main__":
+    org_img = read_image("../data/annotated/10024_2/2.jpg")
+
+    for i in range(1, 3):
+        cj = ColorJitter(0, (1.0, 2.5))
+        out = cj((org_img, org_img, org_img))
+
+        write_jpeg(out[0], f"../documentation/augmentations/cl_aug_{i+1*i}-{1}.jpg")
+        write_jpeg(out[1], f"../documentation/augmentations/cl_aug_{i+1*i}-{1}.jpg")
