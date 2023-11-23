@@ -104,7 +104,6 @@ class Residual(nn.Module):
         return F.relu(x_main + x_sc)
 
 
-
 if __name__ == "__main__":
     t = torch.randn(4, 6, 48, 48)
     t_ = torch.randn(4, 32, 24, 24)
