@@ -16,39 +16,49 @@ class FCSiam(nn.Module):
         # sub-sampling blocks
         self.dwn_block1 = nn.Sequential(nn.Conv2d(in_channels, self.config[0], kernel, padding=1),
                                         nn.BatchNorm2d(self.config[0]),
+                                        nn.ReLU(),
                                         nn.Dropout(p=0.2),
                                         nn.Conv2d(self.config[0], self.config[0], kernel, padding=1),
                                         nn.BatchNorm2d(self.config[0]),
+                                        nn.ReLU(),
                                         nn.Dropout(p=0.2)
                                         )
 
         self.dwn_block2 = nn.Sequential(nn.Conv2d(self.config[0], self.config[1], kernel, padding=1),
                                         nn.BatchNorm2d(self.config[1]),
+                                        nn.ReLU(),
                                         nn.Dropout(p=0.2),
                                         nn.Conv2d(self.config[1], self.config[1], kernel, padding=1),
                                         nn.BatchNorm2d(self.config[1]),
+                                        nn.ReLU(),
                                         nn.Dropout(p=0.2)
                                         )
 
         self.dwn_block3 = nn.Sequential(nn.Conv2d(self.config[1], self.config[2], kernel, padding=1),
                                         nn.BatchNorm2d(self.config[2]),
+                                        nn.ReLU(),
                                         nn.Dropout(p=0.2),
                                         nn.Conv2d(self.config[2], self.config[2], kernel, padding=1),
                                         nn.BatchNorm2d(self.config[2]),
+                                        nn.ReLU(),
                                         nn.Dropout(p=0.2),
                                         nn.Conv2d(self.config[2], self.config[2], kernel, padding=1),
                                         nn.BatchNorm2d(self.config[2]),
+                                        nn.ReLU(),
                                         nn.Dropout(p=0.2)
                                         )
 
         self.dwn_block4 = nn.Sequential(nn.Conv2d(self.config[2], self.config[3], kernel, padding=1),
                                         nn.BatchNorm2d(self.config[3]),
+                                        nn.ReLU(),
                                         nn.Dropout(p=0.2),
                                         nn.Conv2d(self.config[3], self.config[3], kernel, padding=1),
                                         nn.BatchNorm2d(self.config[3]),
+                                        nn.ReLU(),
                                         nn.Dropout(p=0.2),
                                         nn.Conv2d(self.config[3], self.config[3], kernel, padding=1),
                                         nn.BatchNorm2d(self.config[3]),
+                                        nn.ReLU(),
                                         nn.Dropout(p=0.2)
                                         )
 
@@ -62,12 +72,15 @@ class FCSiam(nn.Module):
 
         self.up_block1 = nn.Sequential(self.block_concat1,
                                        nn.BatchNorm2d(self.config[3]),
+                                       nn.ReLU(),
                                        nn.Dropout(p=0.2),
                                        nn.ConvTranspose2d(self.config[3], self.config[3], kernel, padding=1),
                                        nn.BatchNorm2d(self.config[3]),
+                                       nn.ReLU(),
                                        nn.Dropout(p=0.2),
                                        nn.ConvTranspose2d(self.config[3], self.config[2], kernel, padding=1),
                                        nn.BatchNorm2d(self.config[2]),
+                                       nn.ReLU(),
                                        nn.Dropout(p=0.2)
                                        )
 
@@ -80,12 +93,15 @@ class FCSiam(nn.Module):
 
         self.up_block2 = nn.Sequential(self.block_concat2,
                                        nn.BatchNorm2d(self.config[2]),
+                                       nn.ReLU(),
                                        nn.Dropout(p=0.2),
                                        nn.ConvTranspose2d(self.config[2], self.config[2], kernel, padding=1),
                                        nn.BatchNorm2d(self.config[2]),
+                                       nn.ReLU(),
                                        nn.Dropout(p=0.2),
                                        nn.ConvTranspose2d(self.config[2], self.config[1], kernel, padding=1),
                                        nn.BatchNorm2d(self.config[1]),
+                                       nn.ReLU(),
                                        nn.Dropout(p=0.2)
                                        )
 
@@ -98,9 +114,11 @@ class FCSiam(nn.Module):
 
         self.up_block3 = nn.Sequential(self.block_concat3,
                                        nn.BatchNorm2d(self.config[1]),
+                                       nn.ReLU(),
                                        nn.Dropout(p=0.2),
                                        nn.ConvTranspose2d(self.config[1], self.config[0], kernel, padding=1),
                                        nn.BatchNorm2d(self.config[0]),
+                                       nn.ReLU(),
                                        nn.Dropout(p=0.2)
                                        )
 
@@ -113,6 +131,7 @@ class FCSiam(nn.Module):
 
         self.up_block4 = nn.Sequential(self.block_concat4,
                                        nn.BatchNorm2d(self.config[0]),
+                                       nn.ReLU(),
                                        nn.Dropout(p=0.2),
                                        nn.ConvTranspose2d(self.config[0], classes, kernel, padding=1)
                                        )
