@@ -104,21 +104,25 @@ class FCFE(nn.Module):
         x_5_m = self.max_pooling(x_4)
 
         x_6 = self.up_layer1(x_5_m)
+
         pad_x6 = ReplicationPad2d((0, x_4.size(3) - x_6.size(3), 0, x_4.size(2) - x_6.size(2)))
         x_6 = torch.cat((pad_x6(x_6), x_4), dim=1)
 
         x_7 = self.up_block1(x_6)
         x_8 = self.up_layer2(x_7)
+
         pad_x8 = ReplicationPad2d((0, x_3.size(3) - x_8.size(3), 0, x_3.size(2) - x_8.size(2)))
         x_8 = torch.cat((pad_x8(x_8), x_3), dim=1)
 
         x_9 = self.up_block2(x_8)
         x_10 = self.up_layer3(x_9)
+
         pad_x10 = ReplicationPad2d((0, x_2.size(3) - x_10.size(3), 0, x_2.size(2) - x_10.size(2)))
         x_10 = torch.cat((pad_x10(x_10), x_2), dim=1)
 
         x_11 = self.up_block3(x_10)
         x_12 = self.up_layer4(x_11)
+
         pad_x12 = ReplicationPad2d((0, x_1.size(3) - x_12.size(3), 0, x_1.size(2) - x_12.size(2)))
         x_12 = torch.cat((pad_x12(x_12), x_1), dim=1)
 
