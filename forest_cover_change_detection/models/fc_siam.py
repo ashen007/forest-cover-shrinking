@@ -2,6 +2,7 @@ import torch
 
 from torch import nn
 from torch.nn.modules.padding import ReplicationPad2d
+from forest_cover_change_detection.models.fcef.modules import UpSample, DownSample
 
 
 class FCSiam(nn.Module):
@@ -14,125 +15,63 @@ class FCSiam(nn.Module):
         self.diff = diff
 
         # sub-sampling blocks
-        self.dwn_block1 = nn.Sequential(nn.Conv2d(in_channels, self.config[0], kernel, padding=1),
-                                        nn.BatchNorm2d(self.config[0]),
-                                        nn.ReLU(),
-                                        nn.Dropout(p=0.2),
-                                        nn.Conv2d(self.config[0], self.config[0], kernel, padding=1),
-                                        nn.BatchNorm2d(self.config[0]),
-                                        nn.ReLU(),
-                                        nn.Dropout(p=0.2)
-                                        )
-
-        self.dwn_block2 = nn.Sequential(nn.Conv2d(self.config[0], self.config[1], kernel, padding=1),
-                                        nn.BatchNorm2d(self.config[1]),
-                                        nn.ReLU(),
-                                        nn.Dropout(p=0.2),
-                                        nn.Conv2d(self.config[1], self.config[1], kernel, padding=1),
-                                        nn.BatchNorm2d(self.config[1]),
-                                        nn.ReLU(),
-                                        nn.Dropout(p=0.2)
-                                        )
-
-        self.dwn_block3 = nn.Sequential(nn.Conv2d(self.config[1], self.config[2], kernel, padding=1),
-                                        nn.BatchNorm2d(self.config[2]),
-                                        nn.ReLU(),
-                                        nn.Dropout(p=0.2),
-                                        nn.Conv2d(self.config[2], self.config[2], kernel, padding=1),
-                                        nn.BatchNorm2d(self.config[2]),
-                                        nn.ReLU(),
-                                        nn.Dropout(p=0.2),
-                                        nn.Conv2d(self.config[2], self.config[2], kernel, padding=1),
-                                        nn.BatchNorm2d(self.config[2]),
-                                        nn.ReLU(),
-                                        nn.Dropout(p=0.2)
-                                        )
-
-        self.dwn_block4 = nn.Sequential(nn.Conv2d(self.config[2], self.config[3], kernel, padding=1),
-                                        nn.BatchNorm2d(self.config[3]),
-                                        nn.ReLU(),
-                                        nn.Dropout(p=0.2),
-                                        nn.Conv2d(self.config[3], self.config[3], kernel, padding=1),
-                                        nn.BatchNorm2d(self.config[3]),
-                                        nn.ReLU(),
-                                        nn.Dropout(p=0.2),
-                                        nn.Conv2d(self.config[3], self.config[3], kernel, padding=1),
-                                        nn.BatchNorm2d(self.config[3]),
-                                        nn.ReLU(),
-                                        nn.Dropout(p=0.2)
-                                        )
+        self.dwn_block1 = DownSample(in_channels, self.config[0], kernel, blocks=2)
+        self.dwn_block2 = DownSample(self.config[0], self.config[1], kernel, blocks=2)
+        self.dwn_block3 = DownSample(self.config[1], self.config[2], kernel, blocks=3)
+        self.dwn_block4 = DownSample(self.config[2], self.config[3], kernel, blocks=3)
 
         # up-sampling blocks
-        self.up_layer1 = nn.ConvTranspose2d(self.config[3], self.config[3], kernel, stride=2, output_padding=1)
+        self.up_layer1 = UpSample(self.config[3], self.config[3], kernel,
+                                  stride=2, output_padding=1, blocks=1,
+                                  batch_norm=False, dropout=False)
 
         if self.diff:
-            self.block_concat1 = nn.ConvTranspose2d(2 * self.config[3], self.config[3], kernel, padding=1)
+            self.block_concat1 = UpSample(2 * self.config[3], self.config[3], kernel, padding=1, blocks=1)
         else:
-            self.block_concat1 = nn.ConvTranspose2d(3 * self.config[3], self.config[3], kernel, padding=1)
+            self.block_concat1 = UpSample(3 * self.config[3], self.config[3], kernel, padding=1, blocks=1)
 
         self.up_block1 = nn.Sequential(self.block_concat1,
-                                       nn.BatchNorm2d(self.config[3]),
-                                       nn.ReLU(),
-                                       nn.Dropout(p=0.2),
-                                       nn.ConvTranspose2d(self.config[3], self.config[3], kernel, padding=1),
-                                       nn.BatchNorm2d(self.config[3]),
-                                       nn.ReLU(),
-                                       nn.Dropout(p=0.2),
-                                       nn.ConvTranspose2d(self.config[3], self.config[2], kernel, padding=1),
-                                       nn.BatchNorm2d(self.config[2]),
-                                       nn.ReLU(),
-                                       nn.Dropout(p=0.2)
+                                       UpSample(self.config[3], self.config[3], kernel, padding=1, blocks=2),
+                                       UpSample(self.config[3], self.config[2], kernel, padding=1, blocks=1)
                                        )
 
-        self.up_layer2 = nn.ConvTranspose2d(self.config[2], self.config[2], kernel, stride=2, output_padding=1)
+        self.up_layer2 = UpSample(self.config[2], self.config[2], kernel,
+                                  stride=2, output_padding=1, blocks=1,
+                                  batch_norm=False, dropout=False)
 
         if self.diff:
-            self.block_concat2 = nn.ConvTranspose2d(2 * self.config[2], self.config[2], kernel, padding=1)
+            self.block_concat2 = UpSample(2 * self.config[2], self.config[2], kernel, padding=1, blocks=1)
         else:
-            self.block_concat2 = nn.ConvTranspose2d(3 * self.config[2], self.config[2], kernel, padding=1)
+            self.block_concat2 = UpSample(3 * self.config[2], self.config[2], kernel, padding=1, blocks=1)
 
         self.up_block2 = nn.Sequential(self.block_concat2,
-                                       nn.BatchNorm2d(self.config[2]),
-                                       nn.ReLU(),
-                                       nn.Dropout(p=0.2),
-                                       nn.ConvTranspose2d(self.config[2], self.config[2], kernel, padding=1),
-                                       nn.BatchNorm2d(self.config[2]),
-                                       nn.ReLU(),
-                                       nn.Dropout(p=0.2),
-                                       nn.ConvTranspose2d(self.config[2], self.config[1], kernel, padding=1),
-                                       nn.BatchNorm2d(self.config[1]),
-                                       nn.ReLU(),
-                                       nn.Dropout(p=0.2)
+                                       UpSample(self.config[2], self.config[2], kernel, padding=1, blocks=2),
+                                       UpSample(self.config[2], self.config[1], kernel, padding=1, blocks=1)
                                        )
 
-        self.up_layer3 = nn.ConvTranspose2d(self.config[1], self.config[1], kernel, stride=2, output_padding=1)
+        self.up_layer3 = UpSample(self.config[1], self.config[1], kernel,
+                                  stride=2, output_padding=1, blocks=1,
+                                  batch_norm=False, dropout=False)
 
         if self.diff:
-            self.block_concat3 = nn.ConvTranspose2d(2 * self.config[1], self.config[1], kernel, padding=1)
+            self.block_concat3 = UpSample(2 * self.config[1], self.config[1], kernel, padding=1, blocks=1)
         else:
-            self.block_concat3 = nn.ConvTranspose2d(3 * self.config[1], self.config[1], kernel, padding=1)
+            self.block_concat3 = UpSample(3 * self.config[1], self.config[1], kernel, padding=1, blocks=1)
 
         self.up_block3 = nn.Sequential(self.block_concat3,
-                                       nn.BatchNorm2d(self.config[1]),
-                                       nn.ReLU(),
-                                       nn.Dropout(p=0.2),
-                                       nn.ConvTranspose2d(self.config[1], self.config[0], kernel, padding=1),
-                                       nn.BatchNorm2d(self.config[0]),
-                                       nn.ReLU(),
-                                       nn.Dropout(p=0.2)
+                                       UpSample(self.config[1], self.config[0], kernel, padding=1, blocks=1)
                                        )
 
-        self.up_layer4 = nn.ConvTranspose2d(self.config[0], self.config[0], kernel, stride=2, output_padding=1)
+        self.up_layer4 = UpSample(self.config[0], self.config[0], kernel,
+                                  stride=2, output_padding=1, blocks=1,
+                                  batch_norm=False, dropout=False)
 
         if self.diff:
-            self.block_concat4 = nn.ConvTranspose2d(2 * self.config[0], self.config[0], kernel, padding=1)
+            self.block_concat4 = UpSample(2 * self.config[0], self.config[0], kernel, padding=1, blocks=1)
         else:
-            self.block_concat4 = nn.ConvTranspose2d(3 * self.config[0], self.config[0], kernel, padding=1)
+            self.block_concat4 = UpSample(3 * self.config[0], self.config[0], kernel, padding=1, blocks=1)
 
         self.up_block4 = nn.Sequential(self.block_concat4,
-                                       nn.BatchNorm2d(self.config[0]),
-                                       nn.ReLU(),
-                                       nn.Dropout(p=0.2),
                                        nn.ConvTranspose2d(self.config[0], classes, kernel, padding=1)
                                        )
         self.sm = nn.LogSoftmax(dim=1)

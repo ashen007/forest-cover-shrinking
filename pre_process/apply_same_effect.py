@@ -10,7 +10,7 @@ class ColorJitter(object):
     def __init__(self, p: float, factor: tuple):
         self.p = p
         self.factor = random.uniform(factor[0], factor[1])
-        self.order = ['bri', 'cont']  # 'sat', 'hue'
+        self.order = ['bri', 'sat', 'hue', 'cont']  # 'sat', 'hue'
 
     def __call__(self, sample, *args, **kwargs):
         img1, img2, label = sample
@@ -124,5 +124,5 @@ if __name__ == "__main__":
         cj = ColorJitter(0, (1.0, 2.5))
         out = cj((org_img, org_img, org_img))
 
-        write_jpeg(out[0], f"../documentation/augmentations/cl_aug_{i+1*i}-{1}.jpg")
-        write_jpeg(out[1], f"../documentation/augmentations/cl_aug_{i+1*i}-{1}.jpg")
+        write_jpeg(out[0], f"../documentation/augmentations/cl_aug_{i + 1 * i}-{1}.jpg")
+        write_jpeg(out[1], f"../documentation/augmentations/cl_aug_{i + 1 * i}-{1}.jpg")

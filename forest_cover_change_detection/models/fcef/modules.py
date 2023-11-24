@@ -24,7 +24,7 @@ class DownSample(nn.Module):
             if batch_norm:
                 layers.append(nn.BatchNorm2d(filters))
 
-            layers.append(nn.ReLU())
+            layers.append(nn.LeakyReLU())
 
             if dropout:
                 layers.append(nn.Dropout(dropout_rate))
@@ -61,7 +61,7 @@ class UpSample(nn.Module):
             if batch_norm:
                 layers.append(nn.BatchNorm2d(filters))
 
-            layers.append(nn.ReLU())
+            layers.append(nn.LeakyReLU())
 
             if dropout:
                 layers.append(nn.Dropout(dropout_rate))
@@ -88,12 +88,12 @@ class Residual(nn.Module):
         super(Residual, self).__init__()
 
         self.main_branch = nn.Sequential(nn.Conv2d(in_channels, filters, kernel, padding=padding),
-                                         nn.ReLU(),
+                                         nn.LeakyReLU(),
                                          nn.MaxPool2d(2),
                                          nn.Conv2d(filters, filters, kernel, padding=padding),
                                          )
         self.short_cut = nn.Sequential(nn.Conv2d(in_channels, filters, 1, padding=padding),
-                                       nn.ReLU(),
+                                       nn.LeakyReLU(),
                                        nn.MaxPool2d(2)
                                        )
 
