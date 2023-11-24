@@ -16,7 +16,7 @@ def create_patches():
     TRUE_PIX = 0
     N_PATCHES = 0
     ROOT = "../data/annotated/"
-    NAMES = pd.read_csv('../data/train.csv')
+    NAMES = pd.read_csv('../data/annotated/train.csv')
     NEW_NAMES = pd.DataFrame()
     COLUMNS = ['img_1', 'img_2', 'label', 'dir', 'x1', 'x2', 'y1', 'y2', 'cx', 'cy']
 
@@ -52,7 +52,7 @@ def create_patches():
     print(TRUE_PIX, N_PIX, weights)
 
     NEW_NAMES.to_csv("../data/patch_train.csv", index=False)
-    torch.save(torch.FloatTensor(weights).cuda(), "../data/class_weight.pt")
+    torch.save(torch.FloatTensor(weights).cuda(), "../data/annotated/class_weight.pt")
 
 
 if __name__ == "__main__":
