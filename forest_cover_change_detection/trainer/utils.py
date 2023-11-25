@@ -3,7 +3,7 @@ import torch
 import numpy as np
 import pandas as pd
 
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 from forest_cover_change_detection.utils.move import move_to
 
 
@@ -74,7 +74,7 @@ def run_epoch(model, optimizer, data_loader,
     y_pred = []
     start = time.time()
 
-    for inputs, labels in data_loader:
+    for inputs, labels in tqdm(data_loader, unit="steps"):
         # Move the batch to the device we are using.
         inputs = move_to(inputs, device)
         labels = move_to(labels, device)
@@ -194,7 +194,7 @@ def train_loop(model, loss_func,
     # Place the model on the correct computed resource (CPU or GPU)
     model.to(device)
 
-    for epoch in tqdm(range(epochs), desc="Epoch"):
+    for epoch in range(epochs):
         model = model.train()  # Put our model in training mode
 
         # epoch number

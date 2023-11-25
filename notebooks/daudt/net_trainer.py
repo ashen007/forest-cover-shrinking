@@ -18,15 +18,19 @@ from forest_cover_change_detection.metrics.accuracy import *
 class Config:
 
     def __init__(self,
+                 root,
+                 anno,
+                 test,
                  model,
                  loss,
                  epochs,
                  batch_size,
-                 checkpointer):
+                 checkpointer,
+                 restore_best=True):
         # dataloaders
-        self.data_root = '../../data/annotated'
-        self.annotations = '../../data/train.csv'
-        self.test = '../../data/annotated/test.csv'
+        self.data_root = root
+        self.annotations = anno
+        self.test = test
         self.concat = True
         self.patched = True
 
@@ -41,7 +45,7 @@ class Config:
         self.loss = loss
         self.epochs = epochs
         self.batch_size = batch_size
-        self.restore_best = True
+        self.restore_best = restore_best
         self.checkpointer = checkpointer
 
 
@@ -52,7 +56,7 @@ def do(config: Config):
                                       config.concat,
                                       config.patched
                                       )
-    w = torch.load('../../data/annotated/class_weight.pt')
+    w = torch.load(f'{config.data_root}class_weight.pt')
 
     print(f"train image count: {len(data_set)}")
 
@@ -66,7 +70,7 @@ def do(config: Config):
     test_dataloader = DataLoader(test_dataset,
                                  batch_size=config.batch_size, shuffle=True)
 
-    print(f"training steps: {len(train_dataloader)}"
+    print(f"training steps: {len(train_dataloader)}  "
           f"validation steps: {len(test_dataloader)}")
 
     # model creation
@@ -84,14 +88,18 @@ def do(config: Config):
     # save results
     results.to_csv('./results.csv', index=False)
 
-    # restore best checkpoint
-    if config.restore_best:
-        state = torch.load("../../checkpoints/fcfe/best v1/best_model.pth")
-        config.model.load_state_dict(state['model_state_dict'])
-        config.model = config.model.cuda()
+
+def get_img_trio(path1, path2, label_path):
+    img, gt = (read_image(path1), read_image(path2)), read_image(label_path)
+
+    img1 = resize(img[0], size=[256, 256]) / 255.0
+    img2 = resize(img[1], size=[256, 256]) / 255.0
+    gt = resize(gt, size=[256, 256]).squeeze(0) / 255.0
+
+    return img1, img2, gt
 
 
-def evaluate(model, df):
+def evaluate(df, config):
     acc_test = []
     change_acc = []
     no_change_acc = []
@@ -101,18 +109,25 @@ def evaluate(model, df):
     k = []
     metrics = pd.DataFrame()
 
-    for i, row in tqdm(df.iterrows()):
-        img, gt = (read_image(f'../../data/annotated/{row.dir}/{row.img_1}'),
-                   read_image(f'../../data/annotated/{row.dir}/{row.img_2}')), read_image(
-            f'../../data/annotated/{row.label}')
+    # restore best checkpoint
+    if config.restore_best:
+        state = torch.load(f"{config.checkpointer.path}/best_model.pth")
+        config.model.load_state_dict(state['model_state_dict'])
+        config.model = config.model.cuda()
 
-        img1 = resize(img[0], size=[256, 256]) / 255.0
-        img2 = resize(img[1], size=[256, 256]) / 255.0
-        gt = resize(gt, size=[256, 256]).squeeze(0) / 255.0
+    else:
+        state = torch.load("./last-checkpoint.pth")
+        config.model.load_state_dict(state['model_state_dict'])
+        config.model = config.model.cuda()
+
+    for i, row in tqdm(df.iterrows()):
+        img1, img2, gt = get_img_trio(f'{config.data_root}{row.dir}/{row.img_1}',
+                                      f'{config.data_root}{row.dir}/{row.img_2}',
+                                      f'{config.data_root}{row.label}')
 
         with torch.no_grad():
-            model.eval()
-            logits = model(torch.cat((img1, img2), dim=0).unsqueeze(0).to('cuda'))[0].cpu()
+            config.model.eval()
+            logits = config.model(torch.cat((img1, img2), dim=0).unsqueeze(0).to('cuda'))[0].cpu()
             pred = torch.argmax(torch.sigmoid(logits), dim=0)
 
         class_acc = class_accuracy(gt, logits)
@@ -133,4 +148,4 @@ def evaluate(model, df):
     metrics['dice'] = d
     metrics['kappa'] = k
 
-    metrics.to_csv('./metric_eval.csv')
+    metrics.to_csv('./metric_eval.csv', index=False)
