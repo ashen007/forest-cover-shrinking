@@ -74,16 +74,16 @@ class UpSample(nn.Module):
         return self.block(x)
 
 
-class Residual(nn.Module):
+class ResidualDownSample(nn.Module):
 
     def __init__(self,
                  in_channels,
                  filters,
                  kernel=3,
-                 padding=0,
+                 padding=1,
                  down_sample=False
                  ):
-        super(Residual, self).__init__()
+        super(ResidualDownSample, self).__init__()
 
         if not down_sample:
             self.main_branch = nn.Sequential(nn.Conv2d(in_channels, filters, kernel, padding=padding),
@@ -92,9 +92,51 @@ class Residual(nn.Module):
                                              nn.Conv2d(filters, filters, kernel, padding=padding),
                                              nn.BatchNorm2d(filters)
                                              )
-            self.short_cut = nn.Sequential(nn.Conv2d(in_channels, filters, 1, padding=padding),
+            self.short_cut = nn.Sequential(nn.Conv2d(in_channels, filters, 1),
                                            nn.BatchNorm2d(filters)
                                            )
+
+        else:
+            self.main_branch = nn.Sequential(nn.Conv2d(in_channels, filters, kernel, padding=padding),
+                                             nn.BatchNorm2d(filters),
+                                             nn.LeakyReLU(),
+                                             nn.MaxPool2d(2),
+                                             nn.Conv2d(filters, filters, kernel, padding=padding),
+                                             nn.BatchNorm2d(filters)
+                                             )
+            self.short_cut = nn.Sequential(nn.Conv2d(in_channels, filters, 1),
+                                           nn.BatchNorm2d(filters),
+                                           nn.MaxPool2d(2)
+                                           )
+
+    def forward(self, x):
+        x_main = self.main_branch(x)
+        x_sc = self.short_cut(x)
+
+        return F.relu(x_main + x_sc)
+
+
+class ResidualUpSample:
+
+    def __init__(self,
+                 in_channels,
+                 filters,
+                 kernel=3,
+                 padding=1,
+                 out_padding=1,
+                 stride=2
+                 ):
+        super(ResidualUpSample, self).__init__()
+
+        self.main_branch = nn.Sequential(nn.ConvTranspose2d(in_channels, filters, kernel, stride, padding, out_padding),
+                                         nn.BatchNorm2d(filters),
+                                         nn.LeakyReLU(),
+                                         nn.Conv2d(filters, filters, kernel, padding=padding),
+                                         nn.BatchNorm2d(filters)
+                                         )
+        self.short_cut = nn.Sequential(nn.ConvTranspose2d(in_channels, filters, kernel, stride, padding, out_padding),
+                                       nn.BatchNorm2d(filters)
+                                       )
 
     def forward(self, x):
         x_main = self.main_branch(x)
@@ -105,10 +147,10 @@ class Residual(nn.Module):
 
 if __name__ == "__main__":
     t = torch.randn(4, 6, 48, 48)
-    t_ = torch.randn(4, 32, 24, 24)
+    # t_ = torch.randn(4, 32, 24, 24)
     # sub_sample = DownSample(6, 16)
     # up_sample = UpSample(32, 16, stride=2, blocks=1)
-    residual = Residual(6, 16)
+    residual = ResidualDownSample(6, 16, down_sample=True)
 
     # print(sub_sample)
     # print(up_sample)
