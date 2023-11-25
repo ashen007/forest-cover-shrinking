@@ -80,22 +80,21 @@ class Residual(nn.Module):
                  in_channels,
                  filters,
                  kernel=3,
-                 stride=1,
                  padding=0,
-                 output_padding=0,
-                 down_sample=True
+                 down_sample=False
                  ):
         super(Residual, self).__init__()
 
-        self.main_branch = nn.Sequential(nn.Conv2d(in_channels, filters, kernel, padding=padding),
-                                         nn.LeakyReLU(),
-                                         nn.MaxPool2d(2),
-                                         nn.Conv2d(filters, filters, kernel, padding=padding),
-                                         )
-        self.short_cut = nn.Sequential(nn.Conv2d(in_channels, filters, 1, padding=padding),
-                                       nn.LeakyReLU(),
-                                       nn.MaxPool2d(2)
-                                       )
+        if not down_sample:
+            self.main_branch = nn.Sequential(nn.Conv2d(in_channels, filters, kernel, padding=padding),
+                                             nn.BatchNorm2d(filters),
+                                             nn.LeakyReLU(),
+                                             nn.Conv2d(filters, filters, kernel, padding=padding),
+                                             nn.BatchNorm2d(filters)
+                                             )
+            self.short_cut = nn.Sequential(nn.Conv2d(in_channels, filters, 1, padding=padding),
+                                           nn.BatchNorm2d(filters)
+                                           )
 
     def forward(self, x):
         x_main = self.main_branch(x)
@@ -107,10 +106,13 @@ class Residual(nn.Module):
 if __name__ == "__main__":
     t = torch.randn(4, 6, 48, 48)
     t_ = torch.randn(4, 32, 24, 24)
-    sub_sample = DownSample(6, 16)
-    up_sample = UpSample(32, 16, stride=2, blocks=1)
+    # sub_sample = DownSample(6, 16)
+    # up_sample = UpSample(32, 16, stride=2, blocks=1)
+    residual = Residual(6, 16)
 
-    print(sub_sample)
-    print(up_sample)
-    print(sub_sample(t).shape)
-    print(up_sample(t_).shape)
+    # print(sub_sample)
+    # print(up_sample)
+    print(residual)
+    # print(sub_sample(t).shape)
+    # print(up_sample(t_).shape)
+    print(residual(t).shape)

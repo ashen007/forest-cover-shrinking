@@ -26,13 +26,16 @@ class Config:
                  epochs,
                  batch_size,
                  checkpointer,
+                 concat,
+                 multi_in=False,
+                 patched=True,
                  restore_best=True):
         # dataloaders
         self.data_root = root
         self.annotations = anno
         self.test = test
-        self.concat = True
-        self.patched = True
+        self.concat = concat
+        self.patched = patched
 
         # models
         self.in_channels = 6
@@ -42,6 +45,7 @@ class Config:
         self.model = model
         self.optimizer = AdamW(self.model.parameters(), lr=0.001)
         self.scheduler = ReduceLROnPlateau(self.optimizer, factor=0.1, cooldown=10)
+        self.multi_in = multi_in
         self.loss = loss
         self.epochs = epochs
         self.batch_size = batch_size
@@ -53,8 +57,8 @@ def do(config: Config):
     # create dataset
     data_set = ChangeDetectionDataset(config.data_root,
                                       config.annotations,
-                                      config.concat,
-                                      config.patched
+                                      concat=config.concat,
+                                      patched=config.patched
                                       )
     w = torch.load(f'{config.data_root}class_weight.pt')
 
@@ -83,7 +87,8 @@ def do(config: Config):
     results = compiled.train(train_dataloader,
                              config.loss(w),
                              config.epochs,
-                             test_dataloader)
+                             test_dataloader,
+                             multi_in=config.multi_in)
 
     # save results
     results.to_csv('./results.csv', index=False)
@@ -127,7 +132,13 @@ def evaluate(df, config):
 
         with torch.no_grad():
             config.model.eval()
-            logits = config.model(torch.cat((img1, img2), dim=0).unsqueeze(0).to('cuda'))[0].cpu()
+
+            if not config.multi_in:
+                logits = config.model(torch.cat((img1, img2), dim=0).unsqueeze(0).to('cuda'))[0].cpu()
+
+            else:
+                logits = config.model(img1.unsqueeze(0).to('cuda'), img2.unsqueeze(0).to('cuda'))[0].cpu()
+
             pred = torch.argmax(torch.sigmoid(logits), dim=0)
 
         class_acc = class_accuracy(gt, logits)

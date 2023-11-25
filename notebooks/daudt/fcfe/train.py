@@ -14,7 +14,8 @@ if __name__ == "__main__":
                     100,
                     32,
                     checkpointer=SaveBestCheckPoint('../../../checkpoints/fcfe'),
-                    restore_best=False)
+                    restore_best=False,
+                    concat=True)
     df = pd.read_csv(config.test)
 
     do(config)
