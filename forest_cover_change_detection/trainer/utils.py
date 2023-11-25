@@ -5,9 +5,6 @@ import pandas as pd
 
 from tqdm.notebook import tqdm
 from forest_cover_change_detection.utils.move import move_to
-from forest_cover_change_detection.utils.save_best_cp import SaveBestCheckPoint
-
-checkpointer = SaveBestCheckPoint()
 
 
 def get_scores(*, model, optimizer, epoch,
@@ -170,6 +167,7 @@ def train_loop(model, loss_func,
                train_loader, test_loader=None, val_loader=None,
                score_funcs=None, epochs=50, device="cpu",
                optimizer=None, lr_schedule=None,
+               checkpointer=None,
                checkpoint_file="last-checkpoint.pth", keep_best=True,
                multi_in=False):
     if score_funcs is None:
@@ -221,7 +219,7 @@ def train_loop(model, loss_func,
 
         save_checkpoint(epoch, model, optimizer, results, checkpoint_file)
 
-        if keep_best:
+        if keep_best and (checkpointer is not None):
             checkpointer(results["val loss"][-1], epoch, model, optimizer)
 
     if del_opt:

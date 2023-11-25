@@ -12,7 +12,7 @@ class Compile:
     compilation of the model
     """
 
-    def __init__(self, model, optimizer, metrics=None, lr_scheduler=None):
+    def __init__(self, model, optimizer, checkpointer=None, metrics=None, lr_scheduler=None):
         self.loss = None
         self.validation = None
         self.results = None
@@ -20,6 +20,7 @@ class Compile:
         self.optimizer = optimizer
         self.metrics = metrics
         self.lr_scheduler = lr_scheduler
+        self.checkpointer = checkpointer
 
         if torch.cuda.is_available():
             self.device = torch.device('cuda')
@@ -48,7 +49,8 @@ class Compile:
                                   device=self.device,
                                   optimizer=self.optimizer,
                                   lr_schedule=self.lr_scheduler,
-                                  multi_in=multi_in
+                                  multi_in=multi_in,
+                                  checkpointer=self.checkpointer
                                   )
         return self.results
 
