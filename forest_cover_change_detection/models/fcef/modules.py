@@ -113,10 +113,10 @@ class ResidualDownSample(nn.Module):
         x_main = self.main_branch(x)
         x_sc = self.short_cut(x)
 
-        return F.relu(x_main + x_sc)
+        return F.leaky_relu(x_main + x_sc)
 
 
-class ResidualUpSample:
+class ResidualUpSample(nn.Module):
 
     def __init__(self,
                  in_channels,
@@ -142,19 +142,22 @@ class ResidualUpSample:
         x_main = self.main_branch(x)
         x_sc = self.short_cut(x)
 
-        return F.relu(x_main + x_sc)
+        return F.leaky_relu(x_main + x_sc)
 
 
 if __name__ == "__main__":
     t = torch.randn(4, 6, 48, 48)
-    # t_ = torch.randn(4, 32, 24, 24)
+    t_ = torch.randn(4, 16, 24, 24)
     # sub_sample = DownSample(6, 16)
     # up_sample = UpSample(32, 16, stride=2, blocks=1)
     residual = ResidualDownSample(6, 16, down_sample=True)
+    residual_ = ResidualUpSample(16, 32)
 
     # print(sub_sample)
     # print(up_sample)
-    print(residual)
+    # print(residual)
+    print(residual_)
     # print(sub_sample(t).shape)
     # print(up_sample(t_).shape)
-    print(residual(t).shape)
+    # print(residual(t).shape)
+    print(residual_(t_).shape)
