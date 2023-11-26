@@ -25,7 +25,6 @@ class Config:
                  loss,
                  epochs,
                  batch_size,
-                 checkpointer,
                  concat,
                  multi_in=False,
                  patched=True,
@@ -50,7 +49,6 @@ class Config:
         self.epochs = epochs
         self.batch_size = batch_size
         self.restore_best = restore_best
-        self.checkpointer = checkpointer
 
 
 def do(config: Config):
@@ -81,7 +79,6 @@ def do(config: Config):
     compiled = Compile(config.model,
                        config.optimizer,
                        lr_scheduler=config.scheduler,
-                       checkpointer=config.checkpointer
                        )
 
     results = compiled.train(train_dataloader,
@@ -116,7 +113,7 @@ def evaluate(df, config):
 
     # restore best checkpoint
     if config.restore_best:
-        state = torch.load(f"{config.checkpointer.path}/best_model.pth")
+        state = torch.load(f"./best_model.pth")
         config.model.load_state_dict(state['model_state_dict'])
         config.model = config.model.cuda()
 

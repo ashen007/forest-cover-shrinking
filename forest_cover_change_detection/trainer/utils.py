@@ -167,7 +167,6 @@ def train_loop(model, loss_func,
                train_loader, test_loader=None, val_loader=None,
                score_funcs=None, epochs=50, device="cpu",
                optimizer=None, lr_schedule=None,
-               checkpointer=None,
                checkpoint_file="last-checkpoint.pth", keep_best=True,
                multi_in=False):
     if score_funcs is None:
@@ -179,6 +178,7 @@ def train_loop(model, loss_func,
 
     total_train_time = 0  # How long have we spent in the training loop?
     results = {}
+    current_best = 100000
 
     # Initialize every item with an empty list
     for item in to_track:
@@ -219,8 +219,8 @@ def train_loop(model, loss_func,
 
         save_checkpoint(epoch, model, optimizer, results, checkpoint_file)
 
-        if keep_best and (checkpointer is not None):
-            checkpointer(results["val loss"][-1], epoch, model, optimizer)
+        if (current_best >= results["val loss"][-1]) and keep_best:
+            save_checkpoint(epoch, model, optimizer, results, 'best_model.pth')
 
     if del_opt:
         del optimizer

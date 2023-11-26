@@ -169,7 +169,7 @@ class ResNeXtDownSample(nn.Module):
         self.down_smp = down_sample
 
     def forward(self, x):
-        xs = [self.path(x) for _ in range(32)]
+        xs = [self.path(x) for _ in range(4)]
         early_agg = xs[0]
 
         for x_ in xs[1:]:
@@ -203,7 +203,7 @@ class ResNeXtUpSample(nn.Module):
         self.short_cut = nn.ConvTranspose2d(in_channels, in_channels, 3, 2, 1, 1)
 
     def forward(self, x):
-        xs = [self.path(x) for _ in range(32)]
+        xs = [self.path(x) for _ in range(4)]
         early_agg = xs[0]
 
         for x_ in xs[1:]:
@@ -214,6 +214,25 @@ class ResNeXtUpSample(nn.Module):
         return self.out(late_agg)
 
 
+class SEBlock(nn.Module):
+
+    def __init__(self, in_channels, reducer=4):
+        super(SEBlock, self).__init__()
+
+        self.pool = nn.AdaptiveAvgPool2d(1)
+        self.se_block = nn.Sequential(nn.Linear(in_channels, in_channels // reducer),
+                                      nn.LeakyReLU(),
+                                      nn.Linear(in_channels // reducer, in_channels),
+                                      nn.Sigmoid())
+
+    def forward(self, x):
+        b, c, _, _ = x.size()
+        x_ = self.pool(x).view(b, c)
+        x_ = self.se_block(x_).view(b, c, 1, 1)
+
+        return x * x_.expand_as(x)
+
+
 if __name__ == "__main__":
     t = torch.randn(4, 16, 48, 48)
     t_ = torch.randn(4, 16, 24, 24)
@@ -222,7 +241,7 @@ if __name__ == "__main__":
     # residual = ResidualDownSample(6, 16, down_sample=True)
     # residual_ = ResidualUpSample(16, 32)
     # resnext = ResNeXtDownSample(16, down_sample=True)
-    resnext_ = ResNeXtUpSample(16)
+    resnext_ = ResNeXtUpSample(16, 16)
 
     # print(sub_sample)
     # print(up_sample)
