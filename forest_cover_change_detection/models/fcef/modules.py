@@ -147,7 +147,7 @@ class ResidualUpSample(nn.Module):
 
 class ResNeXtDownSample(nn.Module):
 
-    def __init__(self, in_channels, down_sample=False):
+    def __init__(self, in_channels, out_channels, down_sample=False):
         super(ResNeXtDownSample, self).__init__()
 
         sub_net_layers = [nn.Conv2d(in_channels, 4, 1),
@@ -162,6 +162,9 @@ class ResNeXtDownSample(nn.Module):
             sub_net_layers.append(nn.MaxPool2d(2))
 
         self.path = nn.Sequential(*sub_net_layers)
+        self.out = nn.Sequential(nn.Conv2d(in_channels, out_channels, 3, padding=1),
+                                 nn.BatchNorm2d(out_channels),
+                                 nn.LeakyReLU())
         self.pool = nn.MaxPool2d(2)
         self.down_smp = down_sample
 
@@ -175,12 +178,14 @@ class ResNeXtDownSample(nn.Module):
         if self.down_smp:
             x = self.pool(x)
 
-        return F.leaky_relu(F.leaky_relu(early_agg) + x)
+        late_agg = F.leaky_relu(F.leaky_relu(early_agg) + x)
+
+        return self.out(late_agg)
 
 
 class ResNeXtUpSample(nn.Module):
 
-    def __init__(self, in_channels):
+    def __init__(self, in_channels, out_channels):
         super(ResNeXtUpSample, self).__init__()
 
         sub_net_layers = [nn.Conv2d(in_channels, 4, 1),
@@ -192,19 +197,21 @@ class ResNeXtUpSample(nn.Module):
                           nn.Conv2d(4, in_channels, 1)]
 
         self.path = nn.Sequential(*sub_net_layers)
-        self.shrt_cut = nn.ConvTranspose2d(in_channels, in_channels, 3, 2, 1, 1)
+        self.out = nn.Sequential(nn.Conv2d(in_channels, out_channels, 3, padding=1),
+                                 nn.BatchNorm2d(out_channels),
+                                 nn.LeakyReLU())
+        self.short_cut = nn.ConvTranspose2d(in_channels, in_channels, 3, 2, 1, 1)
 
     def forward(self, x):
         xs = [self.path(x) for _ in range(32)]
         early_agg = xs[0]
 
-        print(early_agg.shape)
-        print(self.shrt_cut(x).shape)
-
         for x_ in xs[1:]:
             early_agg += x_
 
-        return F.leaky_relu(F.leaky_relu(early_agg) + self.shrt_cut(x))
+        late_agg = F.leaky_relu(F.leaky_relu(early_agg) + self.short_cut(x))
+
+        return self.out(late_agg)
 
 
 if __name__ == "__main__":

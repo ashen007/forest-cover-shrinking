@@ -111,4 +111,4 @@ if __name__ == '__main__':
     t = torch.randn(16, 6, 256, 256)
     model = FCFERes(6, 2)
 
-    print(model(t))
+    print(model(t).shape)
