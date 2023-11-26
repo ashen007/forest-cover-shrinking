@@ -145,19 +145,84 @@ class ResidualUpSample(nn.Module):
         return F.leaky_relu(x_main + x_sc)
 
 
+class ResNeXtDownSample(nn.Module):
+
+    def __init__(self, in_channels, down_sample=False):
+        super(ResNeXtDownSample, self).__init__()
+
+        sub_net_layers = [nn.Conv2d(in_channels, 4, 1),
+                          nn.BatchNorm2d(4),
+                          nn.LeakyReLU(),
+                          nn.Conv2d(4, 4, 3, padding=1),
+                          nn.BatchNorm2d(4),
+                          nn.LeakyReLU(),
+                          nn.Conv2d(4, in_channels, 1)]
+
+        if down_sample:
+            sub_net_layers.append(nn.MaxPool2d(2))
+
+        self.path = nn.Sequential(*sub_net_layers)
+        self.pool = nn.MaxPool2d(2)
+        self.down_smp = down_sample
+
+    def forward(self, x):
+        xs = [self.path(x) for _ in range(32)]
+        early_agg = xs[0]
+
+        for x_ in xs[1:]:
+            early_agg += x_
+
+        if self.down_smp:
+            x = self.pool(x)
+
+        return F.leaky_relu(F.leaky_relu(early_agg) + x)
+
+
+class ResNeXtUpSample(nn.Module):
+
+    def __init__(self, in_channels):
+        super(ResNeXtUpSample, self).__init__()
+
+        sub_net_layers = [nn.Conv2d(in_channels, 4, 1),
+                          nn.BatchNorm2d(4),
+                          nn.LeakyReLU(),
+                          nn.ConvTranspose2d(4, 4, 3, 2, 1, 1),
+                          nn.BatchNorm2d(4),
+                          nn.LeakyReLU(),
+                          nn.Conv2d(4, in_channels, 1)]
+
+        self.path = nn.Sequential(*sub_net_layers)
+        self.shrt_cut = nn.ConvTranspose2d(in_channels, in_channels, 3, 2, 1, 1)
+
+    def forward(self, x):
+        xs = [self.path(x) for _ in range(32)]
+        early_agg = xs[0]
+
+        print(early_agg.shape)
+        print(self.shrt_cut(x).shape)
+
+        for x_ in xs[1:]:
+            early_agg += x_
+
+        return F.leaky_relu(F.leaky_relu(early_agg) + self.shrt_cut(x))
+
+
 if __name__ == "__main__":
-    t = torch.randn(4, 6, 48, 48)
+    t = torch.randn(4, 16, 48, 48)
     t_ = torch.randn(4, 16, 24, 24)
     # sub_sample = DownSample(6, 16)
     # up_sample = UpSample(32, 16, stride=2, blocks=1)
-    residual = ResidualDownSample(6, 16, down_sample=True)
-    residual_ = ResidualUpSample(16, 32)
+    # residual = ResidualDownSample(6, 16, down_sample=True)
+    # residual_ = ResidualUpSample(16, 32)
+    # resnext = ResNeXtDownSample(16, down_sample=True)
+    resnext_ = ResNeXtUpSample(16)
 
     # print(sub_sample)
     # print(up_sample)
     # print(residual)
-    print(residual_)
+    # print(residual_)
     # print(sub_sample(t).shape)
     # print(up_sample(t_).shape)
     # print(residual(t).shape)
-    print(residual_(t_).shape)
+    # print(residual_(t_).shape)
+    print(resnext_(t_).shape)
