@@ -14,8 +14,8 @@ if __name__ == "__main__":
                     32,
                     multi_in=True,
                     concat=False,
-                    restore_best=False)
+                    restore_best=True)
     df = pd.read_csv(config.test)
 
-    do(config)
+    # do(config)
     evaluate(df, config)

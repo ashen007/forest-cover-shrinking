@@ -241,7 +241,8 @@ if __name__ == "__main__":
     # residual = ResidualDownSample(6, 16, down_sample=True)
     # residual_ = ResidualUpSample(16, 32)
     # resnext = ResNeXtDownSample(16, down_sample=True)
-    resnext_ = ResNeXtUpSample(16, 16)
+    # resnext_ = ResNeXtUpSample(16, 16)
+    se = SEBlock(16)
 
     # print(sub_sample)
     # print(up_sample)
@@ -251,4 +252,5 @@ if __name__ == "__main__":
     # print(up_sample(t_).shape)
     # print(residual(t).shape)
     # print(residual_(t_).shape)
-    print(resnext_(t_).shape)
+    # print(resnext_(t_).shape)
+    print(se(t).shape)
