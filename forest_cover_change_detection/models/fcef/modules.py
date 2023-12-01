@@ -41,7 +41,7 @@ class UpSample(nn.Module):
 
     def __init__(self,
                  in_channels,
-                 filters,
+                 out_channels,
                  kernel=3,
                  stride=1,
                  padding=0,
@@ -55,18 +55,18 @@ class UpSample(nn.Module):
         layers = []
 
         for _ in range(blocks):
-            layers.append(nn.ConvTranspose2d(in_channels, filters, kernel,
+            layers.append(nn.ConvTranspose2d(in_channels, out_channels, kernel,
                                              stride, padding, output_padding))
 
             if batch_norm:
-                layers.append(nn.BatchNorm2d(filters))
+                layers.append(nn.BatchNorm2d(out_channels))
 
             layers.append(nn.LeakyReLU())
 
             if dropout:
                 layers.append(nn.Dropout(dropout_rate))
 
-            in_channels = filters
+            in_channels = out_channels
 
         self.block = nn.Sequential(*layers)
 
@@ -83,10 +83,13 @@ class ResidualDownSample(nn.Module):
                  padding=1):
         super(ResidualDownSample, self).__init__()
 
-        self.main_branch = nn.Sequential(nn.Conv2d(in_channels, out_channels, kernel, padding=padding),
+        self.main_branch = nn.Sequential(nn.Conv2d(in_channels, out_channels, 1),
                                          nn.BatchNorm2d(out_channels),
                                          nn.LeakyReLU(),
                                          nn.Conv2d(out_channels, out_channels, kernel, padding=padding),
+                                         nn.BatchNorm2d(out_channels),
+                                         nn.LeakyReLU(),
+                                         nn.Conv2d(out_channels, out_channels, 1),
                                          nn.BatchNorm2d(out_channels)
                                          )
         self.short_cut = nn.Sequential(nn.Conv2d(in_channels, out_channels, 1),
@@ -106,9 +109,9 @@ class ResidualUpSample(nn.Module):
                  in_channels,
                  filters,
                  kernel=3,
-                 padding=1,
-                 out_padding=1,
-                 stride=2):
+                 padding=0,
+                 out_padding=0,
+                 stride=1):
         super(ResidualUpSample, self).__init__()
 
         self.main_branch = nn.Sequential(nn.ConvTranspose2d(in_channels, filters, kernel, stride, padding, out_padding),
@@ -217,15 +220,15 @@ class SEBlock(nn.Module):
 
 
 if __name__ == "__main__":
-    t = torch.randn(4, 16, 48, 48)
+    t = torch.randn(4, 6, 48, 48)
     t_ = torch.randn(4, 16, 24, 24)
     # sub_sample = DownSample(6, 16)
     # up_sample = UpSample(32, 16, stride=2, blocks=1)
-    # residual = ResidualDownSample(6, 16, down_sample=True)
+    residual = ResidualDownSample(6, 16)
     # residual_ = ResidualUpSample(16, 32)
     # resnext = ResNeXtDownSample(16, down_sample=True)
     # resnext_ = ResNeXtUpSample(16, 16)
-    se = SEBlock(16)
+    # se = SEBlock(16)
 
     # print(sub_sample)
     # print(up_sample)
@@ -233,7 +236,7 @@ if __name__ == "__main__":
     # print(residual_)
     # print(sub_sample(t).shape)
     # print(up_sample(t_).shape)
-    # print(residual(t).shape)
+    print(residual(t).shape)
     # print(residual_(t_).shape)
     # print(resnext_(t_).shape)
-    print(se(t).shape)
+    # print(se(t).shape)
