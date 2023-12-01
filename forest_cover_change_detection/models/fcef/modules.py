@@ -107,21 +107,21 @@ class ResidualUpSample(nn.Module):
 
     def __init__(self,
                  in_channels,
-                 filters,
-                 kernel=3,
-                 padding=0,
-                 out_padding=0,
-                 stride=1):
+                 out_channels,
+                 kernel=3):
         super(ResidualUpSample, self).__init__()
 
-        self.main_branch = nn.Sequential(nn.ConvTranspose2d(in_channels, filters, kernel, stride, padding, out_padding),
-                                         nn.BatchNorm2d(filters),
+        self.main_branch = nn.Sequential(nn.ConvTranspose2d(in_channels, out_channels, 1),
+                                         nn.BatchNorm2d(out_channels),
                                          nn.LeakyReLU(),
-                                         nn.Conv2d(filters, filters, kernel, padding=padding),
-                                         nn.BatchNorm2d(filters)
+                                         nn.Conv2d(out_channels, out_channels, kernel, padding=1),
+                                         nn.BatchNorm2d(out_channels),
+                                         nn.LeakyReLU(),
+                                         nn.ConvTranspose2d(out_channels, out_channels, 1),
+                                         nn.BatchNorm2d(out_channels)
                                          )
-        self.short_cut = nn.Sequential(nn.ConvTranspose2d(in_channels, filters, kernel, stride, padding, out_padding),
-                                       nn.BatchNorm2d(filters)
+        self.short_cut = nn.Sequential(nn.ConvTranspose2d(in_channels, out_channels, 1),
+                                       nn.BatchNorm2d(out_channels)
                                        )
 
     def forward(self, x):
@@ -224,8 +224,8 @@ if __name__ == "__main__":
     t_ = torch.randn(4, 16, 24, 24)
     # sub_sample = DownSample(6, 16)
     # up_sample = UpSample(32, 16, stride=2, blocks=1)
-    residual = ResidualDownSample(6, 16)
-    # residual_ = ResidualUpSample(16, 32)
+    # residual = ResidualDownSample(6, 16)
+    residual_ = ResidualUpSample(16, 32)
     # resnext = ResNeXtDownSample(16, down_sample=True)
     # resnext_ = ResNeXtUpSample(16, 16)
     # se = SEBlock(16)
@@ -236,7 +236,7 @@ if __name__ == "__main__":
     # print(residual_)
     # print(sub_sample(t).shape)
     # print(up_sample(t_).shape)
-    print(residual(t).shape)
-    # print(residual_(t_).shape)
+    # print(residual(t).shape)
+    print(residual_(t_).shape)
     # print(resnext_(t_).shape)
     # print(se(t).shape)
