@@ -11,12 +11,11 @@ if __name__ == "__main__":
                     '../../../data/annotated/test.csv',
                     FCFERes(6, 2),
                     nn.NLLLoss,
-                    150,
+                    100,
                     32,
-                    checkpointer=SaveBestCheckPoint('./'),
-                    restore_best=False,
+                    restore_best=True,
                     concat=True)
     df = pd.read_csv(config.test)
 
-    do(config)
+    # do(config)
     evaluate(df, config)

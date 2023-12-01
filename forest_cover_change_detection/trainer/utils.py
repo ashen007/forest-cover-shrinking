@@ -220,6 +220,7 @@ def train_loop(model, loss_func,
         save_checkpoint(epoch, model, optimizer, results, checkpoint_file)
 
         if (current_best >= results["val loss"][-1]) and keep_best:
+            current_best = results["val loss"][-1]
             save_checkpoint(epoch, model, optimizer, results, 'best_model.pth')
 
     if del_opt:
