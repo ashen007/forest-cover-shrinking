@@ -133,40 +133,34 @@ class ResidualUpSample(nn.Module):
 
 class ResNeXtDownSample(nn.Module):
 
-    def __init__(self, in_channels, out_channels, down_sample=False):
+    def __init__(self, in_channels, out_channels, kernel=3):
         super(ResNeXtDownSample, self).__init__()
 
-        sub_net_layers = [nn.Conv2d(in_channels, 4, 1),
+        sub_net_layers = [nn.Conv2d(in_channels, out_channels, kernel, padding=1),
+                          nn.BatchNorm2d(out_channels),
+                          nn.LeakyReLU(),
+                          nn.Conv2d(out_channels, 4, 1),
                           nn.BatchNorm2d(4),
                           nn.LeakyReLU(),
                           nn.Conv2d(4, 4, 3, padding=1),
                           nn.BatchNorm2d(4),
                           nn.LeakyReLU(),
-                          nn.Conv2d(4, in_channels, 1)]
-
-        if down_sample:
-            sub_net_layers.append(nn.MaxPool2d(2))
+                          nn.Conv2d(4, out_channels, 1)]
 
         self.path = nn.Sequential(*sub_net_layers)
-        self.out = nn.Sequential(nn.Conv2d(in_channels, out_channels, 3, padding=1),
-                                 nn.BatchNorm2d(out_channels),
-                                 nn.LeakyReLU())
-        self.pool = nn.MaxPool2d(2)
-        self.down_smp = down_sample
+        self.identity_path = nn.Sequential(nn.Conv2d(in_channels, out_channels, 1),
+                                           nn.BatchNorm2d(out_channels))
 
     def forward(self, x):
-        xs = [self.path(x) for _ in range(4)]
+        xs = [self.path(x) for _ in range(2)]
         early_agg = xs[0]
 
         for x_ in xs[1:]:
             early_agg += x_
 
-        if self.down_smp:
-            x = self.pool(x)
+        late_agg = F.leaky_relu(F.leaky_relu(early_agg) + self.identity_path(x))
 
-        late_agg = F.leaky_relu(F.leaky_relu(early_agg) + x)
-
-        return self.out(late_agg)
+        return late_agg
 
 
 class ResNeXtUpSample(nn.Module):
@@ -225,8 +219,8 @@ if __name__ == "__main__":
     # sub_sample = DownSample(6, 16)
     # up_sample = UpSample(32, 16, stride=2, blocks=1)
     # residual = ResidualDownSample(6, 16)
-    residual_ = ResidualUpSample(16, 32)
-    # resnext = ResNeXtDownSample(16, down_sample=True)
+    # residual_ = ResidualUpSample(16, 32)
+    resnext = ResNeXtDownSample(6, 16)
     # resnext_ = ResNeXtUpSample(16, 16)
     # se = SEBlock(16)
 
@@ -237,6 +231,7 @@ if __name__ == "__main__":
     # print(sub_sample(t).shape)
     # print(up_sample(t_).shape)
     # print(residual(t).shape)
-    print(residual_(t_).shape)
+    # print(residual_(t_).shape)
+    print(resnext(t).shape)
     # print(resnext_(t_).shape)
     # print(se(t).shape)
