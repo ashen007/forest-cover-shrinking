@@ -168,30 +168,31 @@ class ResNeXtUpSample(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(ResNeXtUpSample, self).__init__()
 
-        sub_net_layers = [nn.Conv2d(in_channels, 4, 1),
+        sub_net_layers = [nn.ConvTranspose2d(in_channels, out_channels, 1, 1),
+                          nn.BatchNorm2d(out_channels),
+                          nn.LeakyReLU(),
+                          nn.ConvTranspose2d(out_channels, 4, 1, 1),
                           nn.BatchNorm2d(4),
                           nn.LeakyReLU(),
-                          nn.ConvTranspose2d(4, 4, 3, 2, 1, 1),
+                          nn.ConvTranspose2d(4, 4, 3, 1, 1),
                           nn.BatchNorm2d(4),
                           nn.LeakyReLU(),
-                          nn.Conv2d(4, in_channels, 1)]
+                          nn.ConvTranspose2d(4, out_channels, 1, 1)]
 
         self.path = nn.Sequential(*sub_net_layers)
-        self.out = nn.Sequential(nn.Conv2d(in_channels, out_channels, 3, padding=1),
-                                 nn.BatchNorm2d(out_channels),
-                                 nn.LeakyReLU())
-        self.short_cut = nn.ConvTranspose2d(in_channels, in_channels, 3, 2, 1, 1)
+        self.identity_path = nn.Sequential(nn.ConvTranspose2d(in_channels, out_channels, 1, 1),
+                                           nn.BatchNorm2d(out_channels))
 
     def forward(self, x):
-        xs = [self.path(x) for _ in range(4)]
+        xs = [self.path(x) for _ in range(2)]
         early_agg = xs[0]
 
         for x_ in xs[1:]:
             early_agg += x_
 
-        late_agg = F.leaky_relu(F.leaky_relu(early_agg) + self.short_cut(x))
+        late_agg = F.leaky_relu(F.leaky_relu(early_agg) + self.identity_path(x))
 
-        return self.out(late_agg)
+        return late_agg
 
 
 class SEBlock(nn.Module):
@@ -220,8 +221,8 @@ if __name__ == "__main__":
     # up_sample = UpSample(32, 16, stride=2, blocks=1)
     # residual = ResidualDownSample(6, 16)
     # residual_ = ResidualUpSample(16, 32)
-    resnext = ResNeXtDownSample(6, 16)
-    # resnext_ = ResNeXtUpSample(16, 16)
+    # resnext = ResNeXtDownSample(6, 16)
+    resnext_ = ResNeXtUpSample(16, 32)
     # se = SEBlock(16)
 
     # print(sub_sample)
@@ -232,6 +233,6 @@ if __name__ == "__main__":
     # print(up_sample(t_).shape)
     # print(residual(t).shape)
     # print(residual_(t_).shape)
-    print(resnext(t).shape)
-    # print(resnext_(t_).shape)
+    # print(resnext(t).shape)
+    print(resnext_(t_).shape)
     # print(se(t).shape)
