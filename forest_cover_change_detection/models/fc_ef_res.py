@@ -9,7 +9,7 @@ class FCFERes(nn.Module):
 
     def __init__(self, in_channels, classes, kernel=3):
         super(FCFERes, self).__init__()
-        filters = [8, 16, 32, 64, 128]
+        filters = [16, 32, 64, 128]
         self.drop = nn.Dropout(0.2)
 
         # down sampling

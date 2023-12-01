@@ -78,36 +78,20 @@ class ResidualDownSample(nn.Module):
 
     def __init__(self,
                  in_channels,
-                 filters,
+                 out_channels,
                  kernel=3,
-                 padding=1,
-                 down_sample=False
-                 ):
+                 padding=1):
         super(ResidualDownSample, self).__init__()
 
-        if not down_sample:
-            self.main_branch = nn.Sequential(nn.Conv2d(in_channels, filters, kernel, padding=padding),
-                                             nn.BatchNorm2d(filters),
-                                             nn.LeakyReLU(),
-                                             nn.Conv2d(filters, filters, kernel, padding=padding),
-                                             nn.BatchNorm2d(filters)
-                                             )
-            self.short_cut = nn.Sequential(nn.Conv2d(in_channels, filters, 1),
-                                           nn.BatchNorm2d(filters)
-                                           )
-
-        else:
-            self.main_branch = nn.Sequential(nn.Conv2d(in_channels, filters, kernel, padding=padding),
-                                             nn.BatchNorm2d(filters),
-                                             nn.LeakyReLU(),
-                                             nn.MaxPool2d(2),
-                                             nn.Conv2d(filters, filters, kernel, padding=padding),
-                                             nn.BatchNorm2d(filters)
-                                             )
-            self.short_cut = nn.Sequential(nn.Conv2d(in_channels, filters, 1),
-                                           nn.BatchNorm2d(filters),
-                                           nn.MaxPool2d(2)
-                                           )
+        self.main_branch = nn.Sequential(nn.Conv2d(in_channels, out_channels, kernel, padding=padding),
+                                         nn.BatchNorm2d(out_channels),
+                                         nn.LeakyReLU(),
+                                         nn.Conv2d(out_channels, out_channels, kernel, padding=padding),
+                                         nn.BatchNorm2d(out_channels)
+                                         )
+        self.short_cut = nn.Sequential(nn.Conv2d(in_channels, out_channels, 1),
+                                       nn.BatchNorm2d(out_channels)
+                                       )
 
     def forward(self, x):
         x_main = self.main_branch(x)
@@ -124,8 +108,7 @@ class ResidualUpSample(nn.Module):
                  kernel=3,
                  padding=1,
                  out_padding=1,
-                 stride=2
-                 ):
+                 stride=2):
         super(ResidualUpSample, self).__init__()
 
         self.main_branch = nn.Sequential(nn.ConvTranspose2d(in_channels, filters, kernel, stride, padding, out_padding),
