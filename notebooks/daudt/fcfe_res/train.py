@@ -17,5 +17,5 @@ if __name__ == "__main__":
                     concat=True)
     df = pd.read_csv(config.test)
 
-    # do(config)
+    do(config)
     evaluate(df, config)

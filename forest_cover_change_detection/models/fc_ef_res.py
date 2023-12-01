@@ -35,31 +35,31 @@ class FCFERes(nn.Module):
                                          )
 
         # up sampling
-        self.up_block_1 = nn.Sequential(ResidualDownSample(filters[4], filters[4]),
+        self.up_block_1 = nn.Sequential(ResidualUpSample(filters[4], filters[4]),
                                         nn.ConvTranspose2d(filters[4], filters[4], kernel,
                                                            stride=2, padding=0, output_padding=1)
                                         )  # (256, 16, 16)
-        self.up_block_2 = nn.Sequential(ResidualDownSample(3 * filters[3], filters[4]),
+        self.up_block_2 = nn.Sequential(ResidualUpSample(3 * filters[3], filters[4]),
                                         ResidualUpSample(filters[4], filters[3]),
                                         nn.ConvTranspose2d(filters[3], filters[3], kernel,
                                                            stride=2, padding=0, output_padding=1)
                                         )  # (128, 32, 32)
-        self.up_block_3 = nn.Sequential(ResidualDownSample(3 * filters[2], filters[3]),
+        self.up_block_3 = nn.Sequential(ResidualUpSample(3 * filters[2], filters[3]),
                                         ResidualUpSample(filters[3], filters[2]),
                                         nn.ConvTranspose2d(filters[2], filters[2], kernel,
                                                            stride=2, padding=0, output_padding=1)
                                         )  # (64, 64, 64)
-        self.up_block_4 = nn.Sequential(ResidualDownSample(3 * filters[1], filters[2]),
+        self.up_block_4 = nn.Sequential(ResidualUpSample(3 * filters[1], filters[2]),
                                         ResidualUpSample(filters[2], filters[1]),
                                         nn.ConvTranspose2d(filters[1], filters[1], kernel,
                                                            stride=2, padding=0, output_padding=1)
                                         )  # (32, 128, 128)
-        self.up_block_5 = nn.Sequential(ResidualDownSample(3 * filters[0], filters[1]),
+        self.up_block_5 = nn.Sequential(ResidualUpSample(3 * filters[0], filters[1]),
                                         ResidualUpSample(filters[1], filters[0]),
                                         nn.ConvTranspose2d(filters[0], filters[0], kernel,
                                                            stride=2, padding=0, output_padding=1)
                                         )  # (16, 256, 256)
-        self.out_block = nn.Sequential(ResidualDownSample(filters[0], filters[0]),
+        self.out_block = nn.Sequential(ResidualUpSample(filters[0], filters[0]),
                                        nn.Conv2d(filters[0], classes, kernel, padding=1),
                                        nn.LogSoftmax(dim=1)
                                        )  # (2, 256, 256)
