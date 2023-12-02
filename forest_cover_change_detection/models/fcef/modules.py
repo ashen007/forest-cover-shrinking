@@ -249,9 +249,80 @@ class ResidualSEUpSample(nn.Module):
         return F.leaky_relu(main_path + id_path)
 
 
+class SplitAttention(nn.Module):
+
+    def __init__(self, in_channels):
+        super(SplitAttention, self).__init__()
+
+        self.pool = nn.AdaptiveAvgPool2d(1)
+        self.main_block = nn.Sequential(nn.Linear(in_channels, in_channels),
+                                        nn.BatchNorm1d(in_channels),
+                                        nn.LeakyReLU())
+        self.linear = nn.Linear(in_channels, in_channels)
+        self.sm = nn.Softmax(dim=1)
+
+    def forward(self, x):
+        b, c, _, _ = x[0].shape
+        ins = torch.zeros(x[0].shape).cuda()
+        output = torch.zeros(x[0].shape).cuda()
+
+        for i in x:
+            ins += i
+
+        x_ = self.pool(ins).view(b, c)
+        x_ = self.main_block(x_)
+        scores = [self.sm(self.linear(x_)).view(b, c, 1, 1) for _ in range(len(x))]
+
+        for i, s in zip(x, scores):
+            output += (i * s)
+
+        return output
+
+
+class ResNeStBlock(nn.Module):
+
+    def __init__(self, in_channels, out_channels, cardinality=1, splits=3):
+        super(ResNeStBlock, self).__init__()
+
+        self.split = nn.Sequential(nn.Conv2d(in_channels, out_channels, 1),
+                                   nn.BatchNorm2d(out_channels),
+                                   nn.LeakyReLU(),
+                                   nn.Conv2d(out_channels, out_channels, 3, padding=1),
+                                   nn.BatchNorm2d(out_channels),
+                                   nn.LeakyReLU()
+                                   )
+        if cardinality > 1:
+            self.cardinal = [[self.split for _ in range(splits)] for _ in range(cardinality)]
+
+        else:
+            self.cardinal = [self.split for _ in range(splits)]
+
+        self.split_attention = SplitAttention(out_channels)
+        self.out = nn.Conv2d(cardinality * out_channels, out_channels, 1)
+        self.identity_path = nn.Sequential(nn.Conv2d(in_channels, out_channels, 1),
+                                           nn.BatchNorm2d(out_channels))
+        self.cardinality = cardinality
+
+    def forward(self, x):
+        if self.cardinality > 1:
+            xs = []
+
+            for i in range(self.cardinality):
+                ins = [card(x) for card in self.cardinal[i]]
+                xs.append(self.split_attention(ins))
+
+            return self.out(torch.cat(xs, dim=1)) + self.identity_path(x)
+
+        else:
+            ins = [card(x) for card in self.cardinal]
+
+            return self.out(self.split_attention(ins)) + self.identity_path(x)
+
+
 if __name__ == "__main__":
     t = torch.randn(4, 6, 48, 48)
     t_ = torch.randn(4, 16, 24, 24)
+
     # sub_sample = DownSample(6, 16)
     # up_sample = UpSample(32, 16, stride=2, blocks=1)
     # residual = ResidualDownSample(6, 16)
@@ -260,7 +331,9 @@ if __name__ == "__main__":
     # resnext_ = ResNeXtUpSample(16, 32)
     # se = SEBlock(16)
     # res_se = ResidualSEDownSample(6, 16)
-    res_se_ = ResidualSEUpSample(16, 16)
+    # res_se_ = ResidualSEUpSample(16, 16)
+    resnst = ResNestDownSample(6, 16, 2)
+    # sa = SplitAttention(16)
 
     # print(sub_sample)
     # print(up_sample)
@@ -274,4 +347,5 @@ if __name__ == "__main__":
     # print(resnext_(t_).shape)
     # print(se(t_).shape)
     # print(res_se(t).shape)
-    print(res_se_(t_).shape)
+    # print(res_se_(t_).shape)
+    print(resnst(t).shape)
