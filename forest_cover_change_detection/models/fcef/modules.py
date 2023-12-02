@@ -214,6 +214,40 @@ class SEBlock(nn.Module):
         return x * x_.expand_as(x)
 
 
+class ResidualSEDownSample(nn.Module):
+
+    def __init__(self, in_channels, out_channels):
+        super(ResidualSEDownSample, self).__init__()
+
+        self.res_path = ResidualDownSample(in_channels, out_channels)
+        self.se_path = SEBlock(out_channels)
+        self.identity_path = nn.Sequential(nn.Conv2d(in_channels, out_channels, 1),
+                                           nn.BatchNorm2d(out_channels))
+
+    def forward(self, x):
+        main_path = self.se_path(self.res_path(x))
+        id_path = self.identity_path(x)
+
+        return F.leaky_relu(main_path + id_path)
+
+
+class ResidualSEUpSample(nn.Module):
+
+    def __init__(self, in_channels, out_channels):
+        super(ResidualSEUpSample, self).__init__()
+
+        self.res_path = ResidualUpSample(in_channels, out_channels)
+        self.se_path = SEBlock(out_channels)
+        self.identity_path = nn.Sequential(nn.Conv2d(in_channels, out_channels, 1),
+                                           nn.BatchNorm2d(out_channels))
+
+    def forward(self, x):
+        main_path = self.se_path(x)
+        id_path = self.identity_path(x)
+
+        return F.leaky_relu(main_path + id_path)
+
+
 if __name__ == "__main__":
     t = torch.randn(4, 6, 48, 48)
     t_ = torch.randn(4, 16, 24, 24)
@@ -222,8 +256,10 @@ if __name__ == "__main__":
     # residual = ResidualDownSample(6, 16)
     # residual_ = ResidualUpSample(16, 32)
     # resnext = ResNeXtDownSample(6, 16)
-    resnext_ = ResNeXtUpSample(16, 32)
+    # resnext_ = ResNeXtUpSample(16, 32)
     # se = SEBlock(16)
+    # res_se = ResidualSEDownSample(6, 16)
+    res_se_ = ResidualSEUpSample(16, 16)
 
     # print(sub_sample)
     # print(up_sample)
@@ -234,5 +270,7 @@ if __name__ == "__main__":
     # print(residual(t).shape)
     # print(residual_(t_).shape)
     # print(resnext(t).shape)
-    print(resnext_(t_).shape)
-    # print(se(t).shape)
+    # print(resnext_(t_).shape)
+    # print(se(t_).shape)
+    # print(res_se(t).shape)
+    print(res_se_(t_).shape)

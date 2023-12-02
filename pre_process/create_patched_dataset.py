@@ -10,13 +10,13 @@ from torchvision.io import read_image
 
 def create_patches():
     IMG_SIZE = (3, 480, 480)
-    PATCH_SIDE = 256
+    PATCH_SIDE = 128
     STRIDE = (PATCH_SIDE // 2) - 1
     N_PIX = 0
     TRUE_PIX = 0
     N_PATCHES = 0
     ROOT = "../data/annotated/"
-    NAMES = pd.read_csv('../data/annotated/train.csv')
+    NAMES = pd.read_csv('../data/annotated/test.csv')
     NEW_NAMES = pd.DataFrame()
     COLUMNS = ['img_1', 'img_2', 'label', 'dir', 'x1', 'x2', 'y1', 'y2', 'cx', 'cy']
 
@@ -51,8 +51,8 @@ def create_patches():
     weights = [1 * 2 * TRUE_PIX / N_PIX, 2 * (N_PIX - TRUE_PIX) / N_PIX]
     print(TRUE_PIX, N_PIX, weights)
 
-    NEW_NAMES.to_csv("../data/patch_train.csv", index=False)
-    torch.save(torch.FloatTensor(weights).cuda(), "../data/annotated/class_weight.pt")
+    NEW_NAMES.to_csv("../data/subsets/128/patch_test.csv", index=False)
+    # torch.save(torch.FloatTensor(weights).cuda(), "../data/annotated/class_weight.pt")
 
 
 if __name__ == "__main__":
