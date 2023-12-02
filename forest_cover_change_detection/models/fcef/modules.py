@@ -209,6 +209,7 @@ class SEBlock(nn.Module):
     def forward(self, x):
         b, c, _, _ = x.size()
         x_ = self.pool(x).view(b, c)
+
         x_ = self.se_block(x_).view(b, c, 1, 1)
 
         return x * x_.expand_as(x)
@@ -242,7 +243,7 @@ class ResidualSEUpSample(nn.Module):
                                            nn.BatchNorm2d(out_channels))
 
     def forward(self, x):
-        main_path = self.se_path(x)
+        main_path = self.se_path(self.res_path(x))
         id_path = self.identity_path(x)
 
         return F.leaky_relu(main_path + id_path)
