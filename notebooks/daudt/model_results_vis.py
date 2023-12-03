@@ -9,19 +9,19 @@ from forest_cover_change_detection.models.fc_fe_resnext import FCFEResNeXt
 from forest_cover_change_detection.models.fc_ef_res_with_split_attention import FCFEResSplitAttention
 from notebooks.daudt.net_trainer import get_img_trio
 
-models = {  # 'fc_ef': FCFE,
-    # 'fc_ef_res': FCFERes,
-    'fc_ef_res_se': FCFEResSE,
-    # 'fc_ef_diff': FCFEResDiff,
-    'fc_fe_resnext': FCFEResNeXt,
-    'fc_ef_res_with_split_attention': FCFEResSplitAttention}
+models = {'fc_ef': FCFE,
+          # 'fc_ef_res': FCFERes,
+          'fc_ef_res_se': FCFEResSE,
+          # 'fc_ef_diff': FCFEResDiff,
+          'fc_fe_resnext': FCFEResNeXt,
+          'fc_ef_res_with_split_attention': FCFEResSplitAttention}
 
-paths = {  # 'fc_ef': './fcfe/best_model.pth',
-    # 'fc_ef_res': './fcfe_res/best_model.pth',
-    'fc_ef_res_se': './fcfe_res_se/best_model.pth',
-    # 'fc_ef_diff': './fcfe_saim_diff/best_model.pth',
-    'fc_fe_resnext': './fcfe_resnext/best_model.pth',
-    'fc_ef_res_with_split_attention': './fcfe_res_split_attention/best_model.pth'}
+paths = {'fc_ef': './fcfe/best_model.pth',
+         # 'fc_ef_res': './fcfe_res/best_model.pth',
+         'fc_ef_res_se': './fcfe_res_se/best_model.pth',
+         # 'fc_ef_diff': './fcfe_saim_diff/best_model.pth',
+         'fc_fe_resnext': './fcfe_resnext/best_model.pth',
+         'fc_ef_res_with_split_attention': './fcfe_res_split_attention/best_model.pth'}
 
 
 def vis_models_prediction(df):

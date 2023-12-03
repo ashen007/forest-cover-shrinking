@@ -3,9 +3,9 @@ from forest_cover_change_detection.models.fc_ef import FCFE
 
 if __name__ == "__main__":
     config = Config('../../../data/annotated/',
-                    '../../../data/train.csv',
+                    '../../../data/subsets/256/train.csv',
                     '../../../data/annotated/test.csv',
-                    FCFE(6, 3),
+                    FCFE(6, 2),
                     nn.NLLLoss,
                     100,
                     32,

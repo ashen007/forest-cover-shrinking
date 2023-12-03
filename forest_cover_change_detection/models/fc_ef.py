@@ -70,7 +70,8 @@ class FCFE(nn.Module):
         self.up_layer4 = nn.ConvTranspose2d(self.config[0], self.config[0], kernel, stride=2, output_padding=1)
         self.up_block4 = nn.Sequential(nn.ConvTranspose2d(2 * self.config[0], self.config[0], kernel, padding=1),
                                        nn.BatchNorm2d(self.config[0]),
-                                       nn.ConvTranspose2d(self.config[0], classes, kernel, padding=1)
+                                       nn.Conv2d(self.config[0], classes, kernel, padding=1),
+                                       nn.LogSoftmax(dim=1)
                                        )
 
     def forward(self, x):
@@ -110,7 +111,7 @@ class FCFE(nn.Module):
 if __name__ == "__main__":
     t = torch.randn(16, 6, 480, 480)
 
-    sub_sampling = FCFE(6, 3)
+    sub_sampling = FCFE(6, 2)
     out = sub_sampling(t)
 
     print(out.shape)
