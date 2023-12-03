@@ -14,19 +14,19 @@ class FCFEResDiff(nn.Module):
 
         # down sampling
         self.dwn_block_1 = nn.Sequential(ResidualDownSample(in_channels, filters[0]),
-                                         ResidualDownSample(filters[0], filters[0], down_sample=True)
+                                         ResidualDownSample(filters[0], filters[0])
                                          )
         self.dwn_block_2 = nn.Sequential(ResidualDownSample(filters[0], filters[1]),
-                                         ResidualDownSample(filters[1], filters[1], down_sample=True)
+                                         ResidualDownSample(filters[1], filters[1])
                                          )
         self.dwn_block_3 = nn.Sequential(ResidualDownSample(filters[1], filters[2]),
-                                         ResidualDownSample(filters[2], filters[2], down_sample=True)
+                                         ResidualDownSample(filters[2], filters[2])
                                          )
         self.dwn_block_4 = nn.Sequential(ResidualDownSample(filters[2], filters[3]),
-                                         ResidualDownSample(filters[3], filters[3], down_sample=True)
+                                         ResidualDownSample(filters[3], filters[3])
                                          )
         self.dwn_block_5 = nn.Sequential(ResidualDownSample(filters[3], filters[4]),
-                                         ResidualDownSample(filters[4], filters[4], down_sample=True)
+                                         ResidualDownSample(filters[4], filters[4])
                                          )
 
         # up sampling

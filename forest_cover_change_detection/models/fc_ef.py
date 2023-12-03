@@ -6,7 +6,7 @@ from torch.nn.modules.padding import ReplicationPad2d
 
 class FCFE(nn.Module):
 
-    def __init__(self, in_channels, kernel):
+    def __init__(self, in_channels, classes, kernel=3):
         super(FCFE, self).__init__()
 
         self.config = [16, 32, 64, 128]
@@ -70,7 +70,7 @@ class FCFE(nn.Module):
         self.up_layer4 = nn.ConvTranspose2d(self.config[0], self.config[0], kernel, stride=2, output_padding=1)
         self.up_block4 = nn.Sequential(nn.ConvTranspose2d(2 * self.config[0], self.config[0], kernel, padding=1),
                                        nn.BatchNorm2d(self.config[0]),
-                                       nn.ConvTranspose2d(self.config[0], 2, kernel, padding=1)
+                                       nn.ConvTranspose2d(self.config[0], classes, kernel, padding=1)
                                        )
 
     def forward(self, x):
