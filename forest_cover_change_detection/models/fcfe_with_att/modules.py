@@ -30,9 +30,9 @@ class AdditiveAttentionGate(nn.Module):
     def __init__(self, gate_channels, skip_channels):
         super(AdditiveAttentionGate, self).__init__()
 
-        self.query = nn.Conv2d(gate_channels, skip_channels, 1)
-        self.value = nn.Conv2d(skip_channels, skip_channels, 1, 2)
-        self.beta = nn.Conv2d(skip_channels, 1, 1)
+        self.query = nn.Conv2d(gate_channels, skip_channels, 1, device='cuda')
+        self.value = nn.Conv2d(skip_channels, skip_channels, 1, 2, device='cuda')
+        self.beta = nn.Conv2d(skip_channels, 1, 1, device='cuda')
 
     def forward(self, skip_con, gate_signal):
         g = self.query(gate_signal)

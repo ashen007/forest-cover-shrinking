@@ -7,10 +7,10 @@ from forest_cover_change_detection.models.fcef.modules import ResidualDownSample
 from forest_cover_change_detection.models.fcfe_with_att.modules import AdditiveAttentionGate
 
 
-class FCFERes(nn.Module):
+class FCFEResAAt(nn.Module):
 
     def __init__(self, in_channels, classes, kernel=3):
-        super(FCFERes, self).__init__()
+        super(FCFEResAAt, self).__init__()
         filters = [16, 32, 64, 128, 256]
         self.drop = nn.Dropout(0.2)
 
@@ -119,6 +119,6 @@ class FCFERes(nn.Module):
 
 if __name__ == '__main__':
     t = torch.randn(16, 6, 256, 256)
-    model = FCFERes(6, 2)
+    model = FCFEResAAt(6, 2)
 
     print(model(t).shape)

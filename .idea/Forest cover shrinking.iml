@@ -2,7 +2,7 @@
 <module type="PYTHON_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/notebooks/daudt/fcfe_res_diff" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/notebooks/r_and_d/fcfe_res_diff" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/data" />
       <excludeFolder url="file://$MODULE_DIR$/data/raw_data" />
     </content>
