@@ -7,7 +7,7 @@ from forest_cover_change_detection.models.fcef.modules import UpSample, DownSamp
 
 class FCSiam(nn.Module):
 
-    def __init__(self, in_channels, classes, diff, kernel=3):
+    def __init__(self, in_channels, classes, diff=True, kernel=3):
         super(FCSiam, self).__init__()
 
         self.config = [16, 32, 64, 128]
