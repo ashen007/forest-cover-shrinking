@@ -17,8 +17,8 @@ models = {'fc_ef': FCFE,
           # 'fc_ef_diff': FCSiam,
           'fc_fe_resnext': FCFEResNeXt,
           'fc_ef_res_with_split_attention': FCFEResSplitAttention,
-          'fc_ef_att':FCFEWithAttention,
-          'fc_ef_res_att':FCFEResAAt}
+          'fc_ef_att': FCFEWithAttention,
+          'fc_ef_res_att': FCFEResAAt}
 
 paths = {'fc_ef': './fcfe/best_model.pth',
          'fc_ef_res': './fcfe_res/best_model.pth',
@@ -26,8 +26,8 @@ paths = {'fc_ef': './fcfe/best_model.pth',
          # 'fc_ef_diff': './fcfe_saim_diff/best_model.pth',
          'fc_fe_resnext': './fcfe_resnext/best_model.pth',
          'fc_ef_res_with_split_attention': './fcfe_res_split_attention/best_model.pth',
-         'fc_ef_att':'./fcfe_att/best_model.pth',
-         'fc_ef_res_att':'./fcfe_res_att/best_model.pth'}
+         'fc_ef_att': './fcfe_att/best_model.pth',
+         'fc_ef_res_att': './fcfe_res_att/best_model.pth'}
 
 
 def vis_models_prediction(df):
@@ -58,10 +58,14 @@ def vis_models_prediction(df):
         gts.append(gt)
         preds.append(pred)
 
-    fig, axes = plt.subplots(nrows=len(models), ncols=4, figsize=(18, 20))
+    fig, axes = plt.subplots(nrows=len(models), ncols=4, figsize=(16, 32))
 
     for i in range(len(models)):
         axes[i, 0].imshow(t0_imgs[i].permute(1, 2, 0), cmap='gray')
+        axes[i, 0].axes(False)
         axes[i, 1].imshow(gts[i], cmap='gray')
+        axes[i, 1].axes(False)
         axes[i, 2].imshow(t1_imgs[i].permute(1, 2, 0), cmap='gray')
+        axes[i, 2].axes(False)
         axes[i, 3].imshow(preds[i], cmap='gray')
+        axes[i, 3].axes(False)
