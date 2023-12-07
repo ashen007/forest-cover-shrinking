@@ -86,21 +86,31 @@ class SpatialAttention(nn.Module):
 
 class FocusAttentionGate(nn.Module):
 
-    def __init__(self, gate_channels, skip_channels):
+    def __init__(self, gate_channels, skip_channels, stride, padding, out_padding):
         super(FocusAttentionGate, self).__init__()
         self.query = nn.Conv2d(gate_channels, skip_channels, 1, device='cuda')
-        self.value = nn.Conv2d(skip_channels, skip_channels, 1, 2, device='cuda')
-        self.up_sample = nn.ConvTranspose2d(skip_channels, skip_channels, 3, 2, 1, 1)
+        self.value = nn.Conv2d(skip_channels, skip_channels, 1, device='cuda')
+        self.up_sample = nn.ConvTranspose2d(skip_channels, skip_channels, 3, stride, padding, out_padding)
+        self.resampler = nn.ConvTranspose2d(skip_channels, skip_channels, 3, padding=1)
+        self.channel_att = ChannelAttention(skip_channels, skip_channels)
+        self.spatial_att = SpatialAttention()
 
-    def forward(self, skip_con, gate_signal):
-        print(self.query(gate_signal))
-        print(self.value(skip_con))
-        print(self.up_sample(self.value(skip_con)))
+    def forward(self, skip_con, gate_signal):  # (16, 128, 16, 16), (16, 256, 8, 8)
+        gate = self.up_sample(self.query(gate_signal))  # (16, 128, 16, 16)
+        skip = self.value(skip_con)  # (16, 128, 16, 16)
+        merge = F.relu(skip + gate)  # (16, 128, 16, 16)
+
+        ch_at = self.channel_att(merge)
+        sp_at = self.spatial_att(merge)
+        resamp = self.resampler(torch.exp(ch_at * sp_at))
+
+        return resamp * skip
 
 
 if __name__ == '__main__':
-    s = torch.randn(16, 128, 16, 16)
-    g = torch.randn(16, 256, 8, 8)
+    s = torch.randn(16, 128, 128, 128).cuda()
+    g = torch.randn(16, 256, 8, 8).cuda()
 
-    at = AdditiveAttentionGate(256, 128)
+    at = FocusAttentionGate(256, 128, 16, 1, 15)
+    at.cuda()
     print(at(s, g).shape)
