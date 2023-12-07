@@ -3,6 +3,7 @@ import numpy as np
 
 from torch import nn
 from torch.nn import functional as F
+from forest_cover_change_detection.layers.conv_ import AdaConv2d
 
 
 class SelfAttention(nn.Module):
@@ -55,6 +56,25 @@ class SqueezeAndExpand(nn.Module):
 
     def forward(self, x, score):
         return self.dec_block(self.inc_block(x) * score)
+
+
+class ChannelAttention(nn.Module):
+
+    def __init__(self, in_channels, out_channels):
+        super(ChannelAttention, self).__init__()
+        self.ada_conv = AdaConv2d(in_channels, out_channels, 1)
+
+    def forward(self, x):
+        glob_avg_pool = F.adaptive_avg_pool2d(x, (1, 1))
+        glob_max_pool = F.max_pool2d(x, x.shape[2:])
+
+        return F.sigmoid(self.ada_conv(torch.cat((glob_avg_pool, glob_max_pool))))
+
+
+class SpatialAttention(nn.Module):
+
+    def __init__(self):
+        pass
 
 
 if __name__ == '__main__':

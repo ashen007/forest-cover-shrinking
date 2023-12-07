@@ -43,7 +43,8 @@ class Config:
         self.lr = 0.001
         self.model = model
         self.optimizer = AdamW(self.model.parameters(), lr=0.001)
-        self.scheduler = OneCycleLR(self.optimizer, max_lr=0.01, epochs=epochs, steps_per_epoch=25)
+        # self.scheduler = OneCycleLR(self.optimizer, max_lr=0.01, epochs=epochs, steps_per_epoch=25)
+        self.scheduler = ReduceLROnPlateau(self.optimizer, factor=0.15)
         self.multi_in = multi_in
         self.loss = loss
         self.epochs = epochs
