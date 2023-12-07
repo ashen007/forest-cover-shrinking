@@ -88,8 +88,8 @@ class FocusAttentionGate(nn.Module):
 
     def __init__(self, gate_channels, skip_channels, stride, padding, out_padding):
         super(FocusAttentionGate, self).__init__()
-        self.query = nn.Conv2d(gate_channels, skip_channels, 1, device='cuda')
-        self.value = nn.Conv2d(skip_channels, skip_channels, 1, device='cuda')
+        self.query = nn.Conv2d(gate_channels, skip_channels, 1)
+        self.value = nn.Conv2d(skip_channels, skip_channels, 1)
         self.up_sample = nn.ConvTranspose2d(skip_channels, skip_channels, 3, stride, padding, out_padding)
         self.resampler = nn.ConvTranspose2d(skip_channels, skip_channels, 3, padding=1)
         self.channel_att = ChannelAttention(skip_channels, skip_channels)
@@ -108,9 +108,8 @@ class FocusAttentionGate(nn.Module):
 
 
 if __name__ == '__main__':
-    s = torch.randn(16, 128, 128, 128).cuda()
-    g = torch.randn(16, 256, 8, 8).cuda()
+    s = torch.randn(16, 128, 128, 128)
+    g = torch.randn(16, 256, 16, 16)
 
-    at = FocusAttentionGate(256, 128, 16, 1, 15)
-    at.cuda()
+    at = FocusAttentionGate(256, 128, 8, 1, 7)
     print(at(s, g).shape)
