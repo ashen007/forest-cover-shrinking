@@ -51,8 +51,8 @@ class SqueezeAndExpand(nn.Module):
     def __init__(self, in_channels, embeddings):
         super(SqueezeAndExpand, self).__init__()
 
-        self.inc_block = nn.Conv2d(in_channels, embeddings, 1)
-        self.dec_block = nn.Conv2d(embeddings, in_channels, 1)
+        self.inc_block = nn.Conv2d(in_channels, embeddings, 1, device='cuda')
+        self.dec_block = nn.Conv2d(embeddings, in_channels, 1, device='cuda')
 
     def forward(self, x, score):
         return self.dec_block(self.inc_block(x) * score)
@@ -62,7 +62,7 @@ class ChannelAttention(nn.Module):
 
     def __init__(self, in_channels, out_channels):
         super(ChannelAttention, self).__init__()
-        self.conv = nn.Conv2d(2 * in_channels, out_channels, 1)
+        self.conv = nn.Conv2d(2 * in_channels, out_channels, 1, device='cuda')
 
     def forward(self, x):
         glob_avg_pool = F.adaptive_avg_pool2d(x, (1, 1))
@@ -75,7 +75,7 @@ class SpatialAttention(nn.Module):
 
     def __init__(self):
         super(SpatialAttention, self).__init__()
-        self.conv = nn.Conv2d(2, 1, 1)
+        self.conv = nn.Conv2d(2, 1, 1, device='cuda')
 
     def forward(self, x):
         glob_avg_pool = torch.mean(x, dim=1, keepdim=True)
@@ -88,10 +88,11 @@ class FocusAttentionGate(nn.Module):
 
     def __init__(self, gate_channels, skip_channels, stride, padding, out_padding):
         super(FocusAttentionGate, self).__init__()
-        self.query = nn.Conv2d(gate_channels, skip_channels, 1)
-        self.value = nn.Conv2d(skip_channels, skip_channels, 1)
-        self.up_sample = nn.ConvTranspose2d(skip_channels, skip_channels, 3, stride, padding, out_padding)
-        self.resampler = nn.ConvTranspose2d(skip_channels, skip_channels, 3, padding=1)
+        self.query = nn.Conv2d(gate_channels, skip_channels, 1, device='cuda')
+        self.value = nn.Conv2d(skip_channels, skip_channels, 1, device='cuda')
+        self.up_sample = nn.ConvTranspose2d(skip_channels, skip_channels, 3, stride, padding, out_padding,
+                                            device='cuda')
+        self.resampler = nn.ConvTranspose2d(skip_channels, skip_channels, 3, padding=1, device='cuda')
         self.channel_att = ChannelAttention(skip_channels, skip_channels)
         self.spatial_att = SpatialAttention()
 
