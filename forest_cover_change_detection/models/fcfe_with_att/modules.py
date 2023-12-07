@@ -62,19 +62,40 @@ class ChannelAttention(nn.Module):
 
     def __init__(self, in_channels, out_channels):
         super(ChannelAttention, self).__init__()
-        self.ada_conv = AdaConv2d(in_channels, out_channels, 1)
+        self.conv = nn.Conv2d(2 * in_channels, out_channels, 1)
 
     def forward(self, x):
         glob_avg_pool = F.adaptive_avg_pool2d(x, (1, 1))
         glob_max_pool = F.max_pool2d(x, x.shape[2:])
 
-        return F.sigmoid(self.ada_conv(torch.cat((glob_avg_pool, glob_max_pool))))
+        return F.sigmoid(self.conv(torch.cat((glob_avg_pool, glob_max_pool), dim=1)))
 
 
 class SpatialAttention(nn.Module):
 
     def __init__(self):
-        pass
+        super(SpatialAttention, self).__init__()
+        self.conv = nn.Conv2d(2, 1, 1)
+
+    def forward(self, x):
+        glob_avg_pool = torch.mean(x, dim=1, keepdim=True)
+        glob_max_pool = torch.amax(x, dim=1, keepdim=True)
+
+        return F.sigmoid(self.conv(torch.cat((glob_avg_pool, glob_max_pool), dim=1)))
+
+
+class FocusAttentionGate(nn.Module):
+
+    def __init__(self, gate_channels, skip_channels):
+        super(FocusAttentionGate, self).__init__()
+        self.query = nn.Conv2d(gate_channels, skip_channels, 1, device='cuda')
+        self.value = nn.Conv2d(skip_channels, skip_channels, 1, 2, device='cuda')
+        self.up_sample = nn.ConvTranspose2d(skip_channels, skip_channels, 3, 2, 1, 1)
+
+    def forward(self, skip_con, gate_signal):
+        print(self.query(gate_signal))
+        print(self.value(skip_con))
+        print(self.up_sample(self.value(skip_con)))
 
 
 if __name__ == '__main__':
