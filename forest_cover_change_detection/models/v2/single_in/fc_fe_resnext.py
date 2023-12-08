@@ -2,7 +2,7 @@ import torch
 
 from torch import nn
 from torch.nn.modules.padding import ReplicationPad2d
-from forest_cover_change_detection.models.fcef.modules import ResNeXtDownSample, UpSample
+from forest_cover_change_detection.models.fcef.modules import ResNeXtDownSample, UpSample, ResidualDownSample
 
 
 class FCFEResNeXt(nn.Module):
@@ -12,52 +12,77 @@ class FCFEResNeXt(nn.Module):
         filters = [16, 32, 64, 128, 256]
 
         # down sampling
-        self.feat_ext_block_1 = nn.Sequential(ResNeXtDownSample(in_channels, filters[0]),
+        self.feat_ext_block_1 = nn.Sequential(ResidualDownSample(in_channels, filters[0]),
+                                              ResNeXtDownSample(filters[0], filters[0]),
+                                              ResidualDownSample(filters[0], filters[0]),
                                               ResNeXtDownSample(filters[0], filters[0]), )
         self.dwn_block_1 = nn.MaxPool2d(2)  # (16, 128, 128)
 
-        self.feat_ext_block_2 = nn.Sequential(ResNeXtDownSample(filters[0], filters[1]),
+        self.feat_ext_block_2 = nn.Sequential(ResidualDownSample(filters[0], filters[1]),
+                                              ResNeXtDownSample(filters[1], filters[1]),
+                                              ResidualDownSample(filters[1], filters[1]),
                                               ResNeXtDownSample(filters[1], filters[1]), )
         self.dwn_block_2 = nn.MaxPool2d(2)  # (32, 64, 64)
 
-        self.feat_ext_block_3 = nn.Sequential(ResNeXtDownSample(filters[1], filters[2]),
+        self.feat_ext_block_3 = nn.Sequential(ResidualDownSample(filters[1], filters[2]),
+                                              ResNeXtDownSample(filters[2], filters[2]),
+                                              ResidualDownSample(filters[2], filters[2]),
                                               ResNeXtDownSample(filters[2], filters[2]), )
         self.dwn_block_3 = nn.MaxPool2d(2)  # (64, 32, 32)
 
-        self.feat_ext_block_4 = nn.Sequential(ResNeXtDownSample(filters[2], filters[3]),
+        self.feat_ext_block_4 = nn.Sequential(ResidualDownSample(filters[2], filters[3]),
+                                              ResNeXtDownSample(filters[3], filters[3]),
+                                              ResidualDownSample(filters[3], filters[3]),
                                               ResNeXtDownSample(filters[3], filters[3]), )
         self.dwn_block_4 = nn.MaxPool2d(2)  # (128, 16, 16)
 
-        self.feat_ext_block_5 = nn.Sequential(ResNeXtDownSample(filters[3], filters[4]),
+        self.feat_ext_block_5 = nn.Sequential(ResidualDownSample(filters[3], filters[4]),
+                                              ResNeXtDownSample(filters[4], filters[4]),
+                                              ResidualDownSample(filters[4], filters[4]),
                                               ResNeXtDownSample(filters[4], filters[4]), )
         self.dwn_block_5 = nn.MaxPool2d(2)  # (256, 8, 8)
 
         # up sampling
-        self.up_feat_ext_block_1 = UpSample(filters[4], filters[4], kernel, padding=1, blocks=2)
+        self.up_feat_ext_block_1 = nn.Sequential(ResidualDownSample(filters[4], filters[4]),
+                                                 ResNeXtDownSample(filters[4], filters[4]),
+                                                 ResidualDownSample(filters[4], filters[4]),
+                                                 ResNeXtDownSample(filters[4], filters[4]))
         # this block is the layer that increases the dimensions by factor 2
         self.up_block_1 = UpSample(filters[4], filters[4], kernel,
                                    stride=2, padding=0, output_padding=1, blocks=1)  # (256, 16, 16)
 
         # this is a common up-sample block for all models
-        self.up_feat_ext_block_2 = UpSample(3 * filters[3], filters[4], kernel, padding=1, blocks=2)
+        self.up_feat_ext_block_2 = nn.Sequential(ResidualDownSample(3 * filters[3], filters[3]),
+                                                 ResNeXtDownSample(filters[3], filters[4]),
+                                                 ResidualDownSample(filters[4], filters[4]),
+                                                 ResNeXtDownSample(filters[4], filters[4]))
         # this block is the layer that increases the dimensions by factor 2
         self.up_block_2 = UpSample(filters[4], filters[3], kernel,
                                    stride=2, padding=0, output_padding=1, blocks=1)  # (128, 32, 32)
 
         # this is a common up-sample block for all models
-        self.up_feat_ext_block_3 = UpSample(3 * filters[2], filters[3], kernel, padding=1, blocks=2)
+        self.up_feat_ext_block_3 = nn.Sequential(ResidualDownSample(3 * filters[2], filters[2]),
+                                                 ResNeXtDownSample(filters[2], filters[3]),
+                                                 ResidualDownSample(filters[3], filters[3]),
+                                                 ResNeXtDownSample(filters[3], filters[3]))
         # this block is the layer that increases the dimensions by factor 2
         self.up_block_3 = UpSample(filters[3], filters[2], kernel,
                                    stride=2, padding=0, output_padding=1, blocks=1)  # (64, 64, 64)
 
         # this is a common up-sample block for all models
-        self.up_feat_ext_block_4 = UpSample(3 * filters[1], filters[2], kernel, padding=1, blocks=2)
+        self.up_feat_ext_block_4 = nn.Sequential(ResidualDownSample(3 * filters[1], filters[1]),
+                                                 ResNeXtDownSample(filters[1], filters[2]),
+                                                 ResidualDownSample(filters[2], filters[2]),
+                                                 ResNeXtDownSample(filters[2], filters[2]))
         # this block is the layer that increases the dimensions by factor 2
         self.up_block_4 = UpSample(filters[2], filters[1], kernel,
                                    stride=2, padding=0, output_padding=1, blocks=1)  # (32, 128, 128)
 
         # this is a common up-sample block for all models
-        self.up_feat_ext_block_5 = UpSample(3 * filters[0], filters[1], kernel, padding=1, blocks=2)
+        self.up_feat_ext_block_5 = nn.Sequential(ResidualDownSample(3 * filters[0], filters[0]),
+                                                 ResNeXtDownSample(filters[0], filters[1]),
+                                                 ResidualDownSample(filters[1], filters[1]),
+                                                 ResNeXtDownSample(filters[1], filters[1]))
         # this block is the layer that increases the dimensions by factor 2
         self.up_block_5 = UpSample(filters[1], filters[0], kernel,
                                    stride=2, padding=0, output_padding=1, blocks=1)  # (16, 256, 256)
