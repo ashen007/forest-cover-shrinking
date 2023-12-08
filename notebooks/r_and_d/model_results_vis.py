@@ -62,10 +62,10 @@ def vis_models_prediction(df):
 
     for i in range(len(models)):
         axes[i, 0].imshow(t0_imgs[i].permute(1, 2, 0), cmap='gray')
-        axes[i, 0].axes(False)
+        axes[i, 0].axis(False)
         axes[i, 1].imshow(gts[i], cmap='gray')
-        axes[i, 1].axes(False)
+        axes[i, 1].axis(False)
         axes[i, 2].imshow(t1_imgs[i].permute(1, 2, 0), cmap='gray')
-        axes[i, 2].axes(False)
+        axes[i, 2].axis(False)
         axes[i, 3].imshow(preds[i], cmap='gray')
-        axes[i, 3].axes(False)
+        axes[i, 3].axis(False)

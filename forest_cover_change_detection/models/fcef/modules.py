@@ -4,6 +4,15 @@ from torch import nn
 from torch.nn import functional as F
 
 
+class BaseFeatureExtractor(nn.Module):
+
+    def __init__(self, in_channels, out_channels):
+        super(BaseFeatureExtractor, self).__init__()
+
+    def forward(self, x):
+        return
+
+
 class DownSample(nn.Module):
 
     def __init__(self,
