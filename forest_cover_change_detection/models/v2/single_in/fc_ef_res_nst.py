@@ -14,24 +14,24 @@ class FCFEResSplitAttention(nn.Module):
         self.drop = nn.Dropout(0.2)
 
         # down sampling
-        self.feat_ext_block_1 = nn.Sequential(ResidualDownSample(in_channels, filters[0]),
-                                              ResNeStBlock(filters[0], filters[0], 2, 3))
+        self.feat_ext_block_1 = nn.Sequential(ResNeStBlock(in_channels, filters[0], 1, 3),
+                                              ResNeStBlock(filters[0], filters[0], 1, 3))
         self.dwn_block_1 = nn.MaxPool2d(2)  # (16, 128, 128)
 
-        self.feat_ext_block_2 = nn.Sequential(ResidualDownSample(filters[0], filters[1]),
-                                              ResNeStBlock(filters[1], filters[1], 2, 3))
+        self.feat_ext_block_2 = nn.Sequential(ResNeStBlock(filters[0], filters[1], 1, 3),
+                                              ResNeStBlock(filters[1], filters[1], 1, 3))
         self.dwn_block_2 = nn.MaxPool2d(2)  # (32, 64, 64)
 
-        self.feat_ext_block_3 = nn.Sequential(ResidualDownSample(filters[1], filters[2]),
-                                              ResNeStBlock(filters[2], filters[2], 2, 3))
+        self.feat_ext_block_3 = nn.Sequential(ResNeStBlock(filters[1], filters[2], 1, 3),
+                                              ResNeStBlock(filters[2], filters[2], 1, 3))
         self.dwn_block_3 = nn.MaxPool2d(2)  # (64, 32, 32)
 
-        self.feat_ext_block_4 = nn.Sequential(ResidualDownSample(filters[2], filters[3]),
-                                              ResNeStBlock(filters[3], filters[3], 2, 3))
+        self.feat_ext_block_4 = nn.Sequential(ResNeStBlock(filters[2], filters[3], 1, 3),
+                                              ResNeStBlock(filters[3], filters[3], 1, 3))
         self.dwn_block_4 = nn.MaxPool2d(2)  # (128, 16, 16)
 
-        self.feat_ext_block_5 = nn.Sequential(ResidualDownSample(filters[3], filters[4]),
-                                              ResNeStBlock(filters[4], filters[4], 2, 3))
+        self.feat_ext_block_5 = nn.Sequential(ResNeStBlock(filters[3], filters[4], 1, 3),
+                                              ResNeStBlock(filters[4], filters[4], 1, 3))
         self.dwn_block_5 = nn.MaxPool2d(2)  # (256, 8, 8)
 
         # up sampling
