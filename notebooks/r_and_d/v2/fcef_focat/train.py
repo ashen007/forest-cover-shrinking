@@ -1,13 +1,12 @@
 from torch import nn
-
 from notebooks.r_and_d.net_trainer import *
-from forest_cover_change_detection.models.v2.single_in.fcef_vanila import FCEFVanila
+from forest_cover_change_detection.models.v2.single_in.fcfe_focat import FCEFVanilaWithFocAt
 
 if __name__ == "__main__":
     config = Config('../../../../data/annotated/',
                     '../../../../data/annotated/train.csv',
                     '../../../../data/annotated/test.csv',
-                    FCEFVanila(6, 2),
+                    FCEFVanilaWithFocAt(6, 2),
                     nn.NLLLoss,
                     300,
                     32,
