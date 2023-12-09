@@ -1,14 +1,13 @@
 import torch
 import matplotlib.pyplot as plt
 
-from forest_cover_change_detection.models.fc_ef import FCFE
-from forest_cover_change_detection.models.fc_ef_res import FCFERes
-from forest_cover_change_detection.models.fc_ef_res_se import FCFEResSE
-from forest_cover_change_detection.models.fc_siam import FCSiam
-from forest_cover_change_detection.models.fc_fe_resnext import FCFEResNeXt
-from forest_cover_change_detection.models.fc_ef_res_with_split_attention import FCFEResSplitAttention
-from forest_cover_change_detection.models.fcfe_with_att.fcfe_att import FCFEWithAttention
-from forest_cover_change_detection.models.fcfe_with_att.fc_ef_res_att import FCFEResAAt
+from forest_cover_change_detection.models.v1.fc_ef import FCFE
+from forest_cover_change_detection.models.v1.fc_ef_res import FCFERes
+from forest_cover_change_detection.models.v1.fc_ef_res_se import FCFEResSE
+from forest_cover_change_detection.models.v1.fc_fe_resnext import FCFEResNeXt
+from forest_cover_change_detection.models.v1.fc_ef_res_with_split_attention import FCFEResSplitAttention
+from forest_cover_change_detection.models.v1.fcfe_att import FCFEWithAttention
+from forest_cover_change_detection.models.v1.fc_ef_res_att import FCFEResAAt
 from notebooks.r_and_d.net_trainer import get_img_trio
 
 models = {'fc_ef': FCFE,

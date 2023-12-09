@@ -1,8 +1,6 @@
-import pandas as pd
-
 from torch import nn
 from notebooks.r_and_d.net_trainer import *
-from forest_cover_change_detection.models.fc_siam import FCSiam
+from forest_cover_change_detection.models.v1.fc_siam import FCSiam
 from forest_cover_change_detection.utils.save_best_cp import SaveBestCheckPoint
 
 if __name__ == "__main__":

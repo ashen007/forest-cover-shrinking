@@ -1,8 +1,5 @@
-import pandas as pd
-
-from torch import nn
 from notebooks.r_and_d.net_trainer import *
-from forest_cover_change_detection.models.fc_fe_resnext import FCFEResNeXt
+from forest_cover_change_detection.models.v1.fc_fe_resnext import FCFEResNeXt
 
 if __name__ == "__main__":
     config = Config('../../../data/annotated/',

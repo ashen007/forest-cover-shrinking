@@ -1,9 +1,6 @@
-import pandas as pd
-
 from torch import nn
 from notebooks.r_and_d.net_trainer import *
-from forest_cover_change_detection.models.fcfe_with_att.fc_ef_res_att import FCFEResAAt
-from forest_cover_change_detection.utils.save_best_cp import SaveBestCheckPoint
+from forest_cover_change_detection.models.v1.fc_ef_res_att import FCFEResAAt
 
 if __name__ == "__main__":
     config = Config('../../../data/annotated/',

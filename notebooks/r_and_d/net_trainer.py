@@ -3,13 +3,11 @@ import pandas as pd
 from dataclasses import dataclass
 from tqdm.notebook import tqdm
 from torch.optim import AdamW
-from torch.optim.lr_scheduler import ReduceLROnPlateau, OneCycleLR
-from torch import nn
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import random_split, DataLoader
 from torchvision.io import read_image
 from torchvision.transforms.functional import resize
 from forest_cover_change_detection.dataloaders.change import ChangeDetectionDataset
-from forest_cover_change_detection.models.fc_siam import FCSiam
 from forest_cover_change_detection.trainer.train import Compile
 from forest_cover_change_detection.metrics.accuracy import *
 

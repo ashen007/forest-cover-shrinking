@@ -1,10 +1,8 @@
 import graphviz
 
 from torchview import draw_graph
-from forest_cover_change_detection.models.fcef.modules import *
-from forest_cover_change_detection.models.fcfe_with_att.modules import *
 
-from forest_cover_change_detection.models.fcfe_with_att.fcfe_att import FCFEWithAttention
+from forest_cover_change_detection.models.v1.fcfe_att import FCFEWithAttention
 
 
 def visual_graph(model, input_size, name, path, expand_nested, direction):

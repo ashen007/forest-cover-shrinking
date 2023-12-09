@@ -1,5 +1,5 @@
 from notebooks.r_and_d.net_trainer import *
-from forest_cover_change_detection.models.fc_siam import FCSiam
+from forest_cover_change_detection.models.v1.fc_siam import FCSiam
 
 if __name__ == "__main__":
     config = Config('../../../data/annotated/',
