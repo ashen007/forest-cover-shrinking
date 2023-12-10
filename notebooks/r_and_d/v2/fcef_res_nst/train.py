@@ -1,5 +1,3 @@
-import pandas as pd
-
 from torch import nn
 from notebooks.r_and_d.net_trainer import *
 from forest_cover_change_detection.models.v2.single_in.fc_ef_res_nst import FCFEResSplitAttention
