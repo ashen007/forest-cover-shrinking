@@ -47,7 +47,7 @@ class FCFEResSE(nn.Module):
         self.up_feat_ext_block_1 = nn.Sequential(ResidualDownSample(filters[4], filters[4]),
                                                  SEBlock(filters[4]),
                                                  ResidualDownSample(filters[4], filters[4]),
-                                                 SEBlock(filters[0]))
+                                                 SEBlock(filters[4]))
         # this block is the layer that increases the dimensions by factor 2
         self.up_block_1 = UpSample(filters[4], filters[4], kernel,
                                    stride=2, padding=0, output_padding=1, blocks=1)  # (256, 16, 16)
@@ -56,7 +56,7 @@ class FCFEResSE(nn.Module):
         self.up_feat_ext_block_2 = nn.Sequential(ResidualDownSample(3 * filters[3], filters[4]),
                                                  SEBlock(filters[4]),
                                                  ResidualDownSample(filters[4], filters[4]),
-                                                 SEBlock(filters[1]))
+                                                 SEBlock(filters[4]))
         # this block is the layer that increases the dimensions by factor 2
         self.up_block_2 = UpSample(filters[4], filters[3], kernel,
                                    stride=2, padding=0, output_padding=1, blocks=1)  # (128, 32, 32)
@@ -65,7 +65,7 @@ class FCFEResSE(nn.Module):
         self.up_feat_ext_block_3 = nn.Sequential(ResidualDownSample(3 * filters[2], filters[3]),
                                                  SEBlock(filters[3]),
                                                  ResidualDownSample(filters[3], filters[3]),
-                                                 SEBlock(filters[2]))
+                                                 SEBlock(filters[3]))
         # this block is the layer that increases the dimensions by factor 2
         self.up_block_3 = UpSample(filters[3], filters[2], kernel,
                                    stride=2, padding=0, output_padding=1, blocks=1)  # (64, 64, 64)
@@ -74,7 +74,7 @@ class FCFEResSE(nn.Module):
         self.up_feat_ext_block_4 = nn.Sequential(ResidualDownSample(3 * filters[1], filters[2]),
                                                  SEBlock(filters[2]),
                                                  ResidualDownSample(filters[2], filters[2]),
-                                                 SEBlock(filters[3]))
+                                                 SEBlock(filters[2]))
         # this block is the layer that increases the dimensions by factor 2
         self.up_block_4 = UpSample(filters[2], filters[1], kernel,
                                    stride=2, padding=0, output_padding=1, blocks=1)  # (32, 128, 128)
@@ -83,7 +83,7 @@ class FCFEResSE(nn.Module):
         self.up_feat_ext_block_5 = nn.Sequential(ResidualDownSample(3 * filters[0], filters[1]),
                                                  SEBlock(filters[1]),
                                                  ResidualDownSample(filters[1], filters[1]),
-                                                 SEBlock(filters[4]))
+                                                 SEBlock(filters[1]))
         # this block is the layer that increases the dimensions by factor 2
         self.up_block_5 = UpSample(filters[1], filters[0], kernel,
                                    stride=2, padding=0, output_padding=1, blocks=1)  # (16, 256, 256)
@@ -152,7 +152,7 @@ class FCFEResSE(nn.Module):
 
 
 if __name__ == '__main__':
-    t = torch.randn(16, 6, 256, 256)
+    t = torch.randn(16, 6, 128, 128)
     model = FCFEResSE(6, 2)
 
     print(model(t).shape)
