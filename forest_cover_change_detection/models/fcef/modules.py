@@ -219,7 +219,7 @@ class SEBlock(nn.Module):
 
         x_ = self.se_block(x_).view(b, c, 1, 1)
 
-        return x * x_.expand_as(x)
+        return F.leaky_relu(x + (x * x_.expand_as(x)))
 
 
 class ResidualSEDownSample(nn.Module):

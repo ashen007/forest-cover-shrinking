@@ -2,72 +2,107 @@ import torch
 
 from torch import nn
 from torch.nn.modules.padding import ReplicationPad2d
-from forest_cover_change_detection.models.fcef.modules import UpSample, DownSample
+from forest_cover_change_detection.models.fcef.modules import UpSample, DownSample, SEBlock
 
 
-class FCEFVanila(nn.Module):
+class FCEFVanilaSE(nn.Module):
     """
     base architecture, testing different tactics to improve
     feature selection and extractions while decoder is fixed
     """
 
     def __init__(self, in_channels, classes, kernel=3):
-        super(FCEFVanila, self).__init__()
+        super(FCEFVanilaSE, self).__init__()
         filters = [16, 32, 64, 128, 256]
 
         # down sampling
         # this block are the changing sections, can try different feature extractors
-        self.feat_ext_block_1 = DownSample(in_channels, filters[0], dropout=False, blocks=2)
+        self.feat_ext_block_1 = nn.Sequential(DownSample(in_channels, filters[0], dropout=False, blocks=1),
+                                              SEBlock(filters[0]),
+                                              DownSample(filters[0], filters[0], dropout=False, blocks=1),
+                                              SEBlock(filters[0]))
         self.dwn_block_1 = nn.MaxPool2d(2)  # (16, 128, 128)
         # attention gate will use output of the above down-sampled layer
 
         # these blocks are the changing sections, can try different feature extractors
-        self.feat_ext_block_2 = DownSample(filters[0], filters[1], dropout=False, blocks=2)
+        self.feat_ext_block_2 = nn.Sequential(DownSample(filters[0], filters[1], dropout=False, blocks=1),
+                                              SEBlock(filters[1]),
+                                              DownSample(filters[1], filters[1], dropout=False, blocks=1),
+                                              SEBlock(filters[1]))
         self.dwn_block_2 = nn.MaxPool2d(2)  # (32, 64, 64)
         # attention gate will use output of the above down-sampled layer
 
         # these blocks are the changing sections, can try different feature extractors
-        self.feat_ext_block_3 = DownSample(filters[1], filters[2], dropout=False, blocks=2)
+        self.feat_ext_block_3 = nn.Sequential(DownSample(filters[1], filters[2], dropout=False, blocks=1),
+                                              SEBlock(filters[2]),
+                                              DownSample(filters[2], filters[2], dropout=False, blocks=1),
+                                              SEBlock(filters[2]))
         self.dwn_block_3 = nn.MaxPool2d(2)  # (64, 32, 32)
         # attention gate will use output of the above down-sampled layer
 
         # these blocks are the changing sections, can try different feature extractors
-        self.feat_ext_block_4 = DownSample(filters[2], filters[3], dropout=False, blocks=2)
+        self.feat_ext_block_4 = nn.Sequential(DownSample(filters[2], filters[3], dropout=False, blocks=1),
+                                              SEBlock(filters[3]),
+                                              DownSample(filters[3], filters[3], dropout=False, blocks=1),
+                                              SEBlock(filters[3]))
         self.dwn_block_4 = nn.MaxPool2d(2)  # (128, 16, 16)
         # attention gate will use output of the above down-sampled layer
 
         # these blocks are the changing sections, can try different feature extractors
-        self.feat_ext_block_5 = DownSample(filters[3], filters[4], dropout=False, blocks=2)
+        self.feat_ext_block_5 = nn.Sequential(DownSample(filters[3], filters[4], dropout=False, blocks=1),
+                                              SEBlock(filters[4]),
+                                              DownSample(filters[4], filters[4], dropout=False, blocks=1),
+                                              SEBlock(filters[4]))
         self.dwn_block_5 = nn.MaxPool2d(2)  # (256, 8, 8)
         # attention gate will use output of the above down-sampled layer
 
         # up sampling
         # this is a common up-sample block for all models
-        self.up_feat_ext_block_1 = UpSample(filters[4], filters[4], kernel, padding=1, blocks=2)
+        self.up_feat_ext_block_1 = nn.Sequential(UpSample(filters[4], filters[4], kernel, padding=1, blocks=1),
+                                                 SEBlock(filters[4]),
+                                                 UpSample(filters[4], filters[4], kernel, padding=1, blocks=1),
+                                                 SEBlock(filters[4])
+                                                 )
         # this block is the layer that increases the dimensions by factor 2
         self.up_block_1 = UpSample(filters[4], filters[4], kernel,
                                    stride=2, padding=0, output_padding=1, blocks=1)  # (256, 16, 16)
 
         # this is a common up-sample block for all models
-        self.up_feat_ext_block_2 = UpSample(3 * filters[3], filters[4], kernel, padding=1, blocks=2)
+        self.up_feat_ext_block_2 = nn.Sequential(UpSample(3 * filters[3], filters[4], kernel, padding=1, blocks=1),
+                                                 SEBlock(filters[4]),
+                                                 UpSample(filters[4], filters[4], kernel, padding=1, blocks=1),
+                                                 SEBlock(filters[4])
+                                                 )
         # this block is the layer that increases the dimensions by factor 2
         self.up_block_2 = UpSample(filters[4], filters[3], kernel,
                                    stride=2, padding=0, output_padding=1, blocks=1)  # (128, 32, 32)
 
         # this is a common up-sample block for all models
-        self.up_feat_ext_block_3 = UpSample(3 * filters[2], filters[3], kernel, padding=1, blocks=2)
+        self.up_feat_ext_block_3 = nn.Sequential(UpSample(3 * filters[2], filters[3], kernel, padding=1, blocks=1),
+                                                 SEBlock(filters[3]),
+                                                 UpSample(filters[3], filters[3], kernel, padding=1, blocks=1),
+                                                 SEBlock(filters[3])
+                                                 )
         # this block is the layer that increases the dimensions by factor 2
         self.up_block_3 = UpSample(filters[3], filters[2], kernel,
                                    stride=2, padding=0, output_padding=1, blocks=1)  # (64, 64, 64)
 
         # this is a common up-sample block for all models
-        self.up_feat_ext_block_4 = UpSample(3 * filters[1], filters[2], kernel, padding=1, blocks=2)
+        self.up_feat_ext_block_4 = nn.Sequential(UpSample(3 * filters[1], filters[2], kernel, padding=1, blocks=1),
+                                                 SEBlock(filters[2]),
+                                                 UpSample(filters[2], filters[2], kernel, padding=1, blocks=1),
+                                                 SEBlock(filters[2])
+                                                 )
         # this block is the layer that increases the dimensions by factor 2
         self.up_block_4 = UpSample(filters[2], filters[1], kernel,
                                    stride=2, padding=0, output_padding=1, blocks=1)  # (32, 128, 128)
 
         # this is a common up-sample block for all models
-        self.up_feat_ext_block_5 = UpSample(3 * filters[0], filters[1], kernel, padding=1, blocks=2)
+        self.up_feat_ext_block_5 = nn.Sequential(UpSample(3 * filters[0], filters[1], kernel, padding=1, blocks=1),
+                                                 SEBlock(filters[1]),
+                                                 UpSample(filters[1], filters[1], kernel, padding=1, blocks=1),
+                                                 SEBlock(filters[1])
+                                                 )
         # this block is the layer that increases the dimensions by factor 2
         self.up_block_5 = UpSample(filters[1], filters[0], kernel,
                                    stride=2, padding=0, output_padding=1, blocks=1)  # (16, 256, 256)
@@ -136,7 +171,7 @@ class FCEFVanila(nn.Module):
 
 
 if __name__ == '__main__':
-    t = torch.randn(16, 6, 96, 96)
-    model = FCEFVanila(6, 2)
+    t = torch.randn(16, 6, 128, 128)
+    model = FCEFVanilaSE(6, 2)
 
     print(model(t).shape)
