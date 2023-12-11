@@ -4,8 +4,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-def metric_summary(root, renames):
-    comp_df = []
+def metric_summary(root):
+    comp_df = {}
 
     for sub in os.listdir(root):
         sub_dir = os.path.join(root, sub)
@@ -14,10 +14,9 @@ def metric_summary(root, renames):
             if sub.startswith('fc'):
                 metric_file = os.path.join(sub_dir, 'metric_eval.csv')
                 sub_metrics = pd.read_csv(metric_file)
-                comp_df.append(sub_metrics.mean())
+                comp_df[f"{root.split('/')[-1]}_{sub}"] = sub_metrics.mean().to_dict()
 
-    comp_df = pd.concat(comp_df, axis=1)
-    comp_df = comp_df.rename(columns=renames).T
+    comp_df = pd.DataFrame(comp_df).T
     comp_df['f1'] = comp_df.apply(lambda x: 2 * ((x['precision'] * x['recall']) / (x['precision'] + x['recall'])),
                                   axis=1)
 
