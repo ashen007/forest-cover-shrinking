@@ -47,18 +47,6 @@ class AdditiveAttentionGate(nn.Module):
         return skip_con * w
 
 
-class SqueezeAndExpand(nn.Module):
-
-    def __init__(self, in_channels, embeddings):
-        super(SqueezeAndExpand, self).__init__()
-
-        self.inc_block = nn.Conv2d(in_channels, embeddings, 1, device='cuda')
-        self.dec_block = nn.Conv2d(embeddings, in_channels, 1, device='cuda')
-
-    def forward(self, x, score):
-        return self.dec_block(self.inc_block(x) * score)
-
-
 class ChannelAttention(nn.Module):
 
     def __init__(self, in_channels, out_channels):
@@ -127,7 +115,4 @@ class SqueezeAndExcitation(nn.Module):
 
 if __name__ == '__main__':
     s = torch.randn(16, 128, 128, 128)
-    g = torch.randn(16, 256, 16, 16)
-
-    at = FocusAttentionGate(256, 128, 8, 1, 7)
-    print(at(s, g).shape)
+    # g = torch.randn(16, 256, 16, 16)

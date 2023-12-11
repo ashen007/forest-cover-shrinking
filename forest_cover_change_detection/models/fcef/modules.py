@@ -142,37 +142,34 @@ class ResidualUpSample(nn.Module):
 
 class ResNeXtDownSample(nn.Module):
 
-    def __init__(self, in_channels, out_channels, kernel=3):
+    def __init__(self, in_channels, out_channels, c=32, kernel=3):
         super(ResNeXtDownSample, self).__init__()
 
-        sub_net_layers = [nn.Conv2d(in_channels, out_channels, kernel, padding=1),
+        sub_net_layers = [nn.Conv2d(in_channels, in_channels // 2, 1),
+                          nn.BatchNorm2d(in_channels // 2),
+                          nn.LeakyReLU(),
+                          nn.Conv2d(in_channels // 2, in_channels // 2, kernel, padding=1, groups=c),
+                          nn.BatchNorm2d(in_channels // 2),
+                          nn.LeakyReLU(),
+                          nn.Conv2d(in_channels // 2, out_channels, 1),
                           nn.BatchNorm2d(out_channels),
-                          nn.LeakyReLU(),
-                          nn.Conv2d(out_channels, 4, 1),
-                          nn.BatchNorm2d(4),
-                          nn.LeakyReLU(),
-                          nn.Conv2d(4, 4, 3, padding=1),
-                          nn.BatchNorm2d(4),
-                          nn.LeakyReLU(),
-                          nn.Conv2d(4, out_channels, 1)]
+                          nn.LeakyReLU()]
 
         self.path = nn.Sequential(*sub_net_layers)
         self.identity_path = nn.Sequential(nn.Conv2d(in_channels, out_channels, 1),
                                            nn.BatchNorm2d(out_channels))
 
     def forward(self, x):
-        xs = [self.path(x) for _ in range(2)]
-        early_agg = xs[0]
+        path = self.path(x)
+        id_path = self.identity_path(x)
 
-        for x_ in xs[1:]:
-            early_agg += x_
-
-        late_agg = F.leaky_relu(F.leaky_relu(early_agg) + self.identity_path(x))
-
-        return late_agg
+        return F.leaky_relu(path + id_path)
 
 
 class ResNeXtUpSample(nn.Module):
+    """
+    Wrong implementation
+    """
 
     def __init__(self, in_channels, out_channels):
         super(ResNeXtUpSample, self).__init__()
@@ -329,32 +326,8 @@ class ResNeStBlock(nn.Module):
 
 
 if __name__ == "__main__":
-    t = torch.randn(4, 6, 48, 48)
-    t_ = torch.randn(4, 16, 24, 24)
+    t = torch.randn(4, 16, 48, 48)
 
-    # sub_sample = DownSample(6, 16)
-    # up_sample = UpSample(32, 16, stride=2, blocks=1)
-    # residual = ResidualDownSample(6, 16)
-    # residual_ = ResidualUpSample(16, 32)
-    # resnext = ResNeXtDownSample(6, 16)
-    # resnext_ = ResNeXtUpSample(16, 32)
-    # se = SEBlock(16)
-    # res_se = ResidualSEDownSample(6, 16)
-    # res_se_ = ResidualSEUpSample(16, 16)
-    resnst = ResNestDownSample(6, 16, 2)
-    # sa = SplitAttention(16)
+    model = ResNeXtDownSample(16, 32, 8)
 
-    # print(sub_sample)
-    # print(up_sample)
-    # print(residual)
-    # print(residual_)
-    # print(sub_sample(t).shape)
-    # print(up_sample(t_).shape)
-    # print(residual(t).shape)
-    # print(residual_(t_).shape)
-    # print(resnext(t).shape)
-    # print(resnext_(t_).shape)
-    # print(se(t_).shape)
-    # print(res_se(t).shape)
-    # print(res_se_(t_).shape)
-    print(resnst(t).shape)
+    print(model(t).shape)
