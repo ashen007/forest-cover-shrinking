@@ -49,7 +49,7 @@ def training_summary(root):
 
 
 def training_curves(t, v, labels):
-    plt.figure(figsize=(24, 6), dpi=300)
+    plt.figure(figsize=(24, 12), dpi=300)
     plt.subplot(1, 2, 1)
     sns.lineplot(data=t, dashes=False,
                  palette=sns.color_palette('BrBG', 9), ci=None)
