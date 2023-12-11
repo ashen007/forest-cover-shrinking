@@ -1,6 +1,6 @@
 from torch import nn
 from notebooks.r_and_d.net_trainer import *
-from forest_cover_change_detection.models.v2.single_in.fcfe_focat import FCEFVanilaWithFocAt
+from forest_cover_change_detection.models.v2.temp.fcfe_focat import FCEFVanilaWithFocAt
 
 if __name__ == "__main__":
     config = Config('../../../../data/annotated/',

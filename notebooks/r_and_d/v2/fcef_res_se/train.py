@@ -1,6 +1,6 @@
 from torch import nn
 from notebooks.r_and_d.net_trainer import *
-from forest_cover_change_detection.models.v2.single_in.fc_ef_res_se import FCFEResSE
+from forest_cover_change_detection.models.v2.single_in.channel_attention.fc_ef_res_se import FCFEResSE
 
 if __name__ == "__main__":
     config = Config('../../../../data/annotated/',
