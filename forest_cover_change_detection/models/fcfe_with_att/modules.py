@@ -5,8 +5,6 @@ import numpy as np
 
 from torch import nn
 from torch.nn import functional as F
-from forest_cover_change_detection.layers.conv_ import AdaConv2d
-from forest_cover_change_detection.models.fcef.modules import SEBlock
 
 
 class SelfAttention(nn.Module):
@@ -97,22 +95,6 @@ class FocusAttentionGate(nn.Module):
         resamp = self.resampler(torch.exp(ch_at * sp_at))
 
         return resamp * skip
-
-
-class SqueezeAndExcitation(nn.Module):
-
-    def __init__(self, in_channels, out_channels):
-        super(SqueezeAndExcitation, self).__init__()
-
-        self.se_path = SEBlock(out_channels)
-        self.identity_path = nn.Sequential(nn.Conv2d(in_channels, out_channels, 1),
-                                           nn.BatchNorm2d(out_channels))
-
-    def forward(self, x):
-        main_path = self.se_path(x)
-        id_path = self.identity_path(x)
-
-        return F.leaky_relu(main_path + id_path)
 
 
 def get_freq_indices(method):
@@ -218,5 +200,8 @@ class MultiSpectralAttentionLayer(nn.Module):
 
 
 if __name__ == '__main__':
-    s = torch.randn(16, 128, 128, 128)
-    # g = torch.randn(16, 256, 16, 16)
+    s = torch.randn(16, 32, 128, 128)
+
+    model = MultiSpectralAttentionLayer(32, 14, 14)
+
+    print(model(s).shape)

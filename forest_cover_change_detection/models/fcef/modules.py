@@ -3,6 +3,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from forest_cover_change_detection.layers.activation_ import RSoftMax
+from forest_cover_change_detection.models.fcfe_with_att.modules import MultiSpectralAttentionLayer, MultiSpectralDCTLayer
 
 
 class BaseFeatureExtractor(nn.Module):
@@ -325,9 +326,63 @@ class ResNeStSE(nn.Module):
         return F.leaky_relu(main_path + id_path)
 
 
-if __name__ == "__main__":
-    t = torch.randn(4, 16, 48, 48)
+class ResidualFCA(nn.Module):
 
-    model = ResNeStSE(16, 16, 2, 1)
+    def __init__(self, in_channels, out_channels):
+        super(ResidualFCA, self).__init__()
+        c2wh = dict([(16, 112), (32, 56), (64, 28), (128, 14), (256, 7)])
+
+        self.res_path = ResidualDownSample(in_channels, out_channels)
+        self.cha_path = MultiSpectralAttentionLayer(out_channels, c2wh[out_channels], c2wh[out_channels], 8)
+        self.identity_path = nn.Sequential(nn.Conv2d(in_channels, out_channels, 1),
+                                           nn.BatchNorm2d(out_channels))
+
+    def forward(self, x):
+        main_path = self.cha_path(self.res_path(x))
+        id_path = self.identity_path(x)
+
+        return F.leaky_relu(main_path + id_path)
+
+
+class ResNeXtFCA(nn.Module):
+
+    def __init__(self, in_channels, out_channels, c):
+        super(ResNeXtFCA, self).__init__()
+        c2wh = dict([(16, 112), (32, 56), (64, 28), (128, 14), (256, 7)])
+
+        self.res_path = ResNeXtDownSample(in_channels, out_channels, c)
+        self.cha_path = MultiSpectralAttentionLayer(out_channels, c2wh[out_channels], c2wh[out_channels], 8)
+        self.identity_path = nn.Sequential(nn.Conv2d(in_channels, out_channels, 1),
+                                           nn.BatchNorm2d(out_channels))
+
+    def forward(self, x):
+        main_path = self.cha_path(self.res_path(x))
+        id_path = self.identity_path(x)
+
+        return F.leaky_relu(main_path + id_path)
+
+
+class ResNeStFCA(nn.Module):
+
+    def __init__(self, in_channels, out_channels, r, g):
+        super(ResNeStFCA, self).__init__()
+        c2wh = dict([(16, 112), (32, 56), (64, 28), (128, 14), (256, 7)])
+
+        self.res_path = ResNeStBlock(in_channels, out_channels, r, g)
+        self.cha_path = MultiSpectralAttentionLayer(out_channels, c2wh[out_channels], c2wh[out_channels], 8)
+        self.identity_path = nn.Sequential(nn.Conv2d(in_channels, out_channels, 1),
+                                           nn.BatchNorm2d(out_channels))
+
+    def forward(self, x):
+        main_path = self.cha_path(self.res_path(x))
+        id_path = self.identity_path(x)
+
+        return F.leaky_relu(main_path + id_path)
+
+
+if __name__ == "__main__":
+    t = torch.randn(4, 16, 128, 128)
+
+    model = ResidualFCA(16, 16)
 
     print(model(t).shape)
