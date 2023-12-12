@@ -202,60 +202,6 @@ class ResNeXtUpSample(nn.Module):
         return late_agg
 
 
-class SEBlock(nn.Module):
-
-    def __init__(self, in_channels, reducer=4):
-        super(SEBlock, self).__init__()
-
-        self.pool = nn.AdaptiveAvgPool2d(1)
-        self.se_block = nn.Sequential(nn.Linear(in_channels, in_channels // reducer),
-                                      nn.LeakyReLU(),
-                                      nn.Linear(in_channels // reducer, in_channels),
-                                      nn.Sigmoid())
-
-    def forward(self, x):
-        b, c, _, _ = x.size()
-        x_ = self.pool(x).view(b, c)
-
-        x_ = self.se_block(x_).view(b, c, 1, 1)
-
-        return F.leaky_relu(x + (x * x_.expand_as(x)))
-
-
-class ResidualSEDownSample(nn.Module):
-
-    def __init__(self, in_channels, out_channels):
-        super(ResidualSEDownSample, self).__init__()
-
-        self.res_path = ResidualDownSample(in_channels, out_channels)
-        self.se_path = SEBlock(out_channels)
-        self.identity_path = nn.Sequential(nn.Conv2d(in_channels, out_channels, 1),
-                                           nn.BatchNorm2d(out_channels))
-
-    def forward(self, x):
-        main_path = self.se_path(self.res_path(x))
-        id_path = self.identity_path(x)
-
-        return F.leaky_relu(main_path + id_path)
-
-
-class ResidualSEUpSample(nn.Module):
-
-    def __init__(self, in_channels, out_channels):
-        super(ResidualSEUpSample, self).__init__()
-
-        self.res_path = ResidualUpSample(in_channels, out_channels)
-        self.se_path = SEBlock(out_channels)
-        self.identity_path = nn.Sequential(nn.Conv2d(in_channels, out_channels, 1),
-                                           nn.BatchNorm2d(out_channels))
-
-    def forward(self, x):
-        main_path = self.se_path(self.res_path(x))
-        id_path = self.identity_path(x)
-
-        return F.leaky_relu(main_path + id_path)
-
-
 class SplitAttention(nn.Module):
 
     def __init__(self, in_channels, out_channels, g=1, radix=2, red_fac=4):
@@ -308,9 +254,80 @@ class ResNeStBlock(nn.Module):
         return F.leaky_relu(out)
 
 
+class SEBlock(nn.Module):
+
+    def __init__(self, in_channels, reducer=4):
+        super(SEBlock, self).__init__()
+
+        self.pool = nn.AdaptiveAvgPool2d(1)
+        self.se_block = nn.Sequential(nn.Linear(in_channels, in_channels // reducer),
+                                      nn.LeakyReLU(),
+                                      nn.Linear(in_channels // reducer, in_channels),
+                                      nn.Sigmoid())
+
+    def forward(self, x):  # features from block (ex: residual)
+        b, c, _, _ = x.size()
+        x_ = self.pool(x).view(b, c)
+
+        x_ = self.se_block(x_).view(b, c, 1, 1)
+
+        return x * x_.expand_as(x)  # scale
+
+
+class ResidualSE(nn.Module):
+
+    def __init__(self, in_channels, out_channels):
+        super(ResidualSE, self).__init__()
+
+        self.res_path = ResidualDownSample(in_channels, out_channels)
+        self.se_path = SEBlock(out_channels)
+        self.identity_path = nn.Sequential(nn.Conv2d(in_channels, out_channels, 1),
+                                           nn.BatchNorm2d(out_channels))
+
+    def forward(self, x):
+        main_path = self.se_path(self.res_path(x))
+        id_path = self.identity_path(x)
+
+        return F.leaky_relu(main_path + id_path)
+
+
+class ResNeXtSE(nn.Module):
+
+    def __init__(self, in_channels, out_channels, c):
+        super(ResNeXtSE, self).__init__()
+
+        self.res_path = ResNeXtDownSample(in_channels, out_channels, c)
+        self.se_path = SEBlock(out_channels)
+        self.identity_path = nn.Sequential(nn.Conv2d(in_channels, out_channels, 1),
+                                           nn.BatchNorm2d(out_channels))
+
+    def forward(self, x):
+        main_path = self.se_path(self.res_path(x))
+        id_path = self.identity_path(x)
+
+        return F.leaky_relu(main_path + id_path)
+
+
+class ResNeStSE(nn.Module):
+
+    def __init__(self, in_channels, out_channels, r, g):
+        super(ResNeStSE, self).__init__()
+
+        self.res_path = ResNeStBlock(in_channels, out_channels, r, g)
+        self.se_path = SEBlock(out_channels)
+        self.identity_path = nn.Sequential(nn.Conv2d(in_channels, out_channels, 1),
+                                           nn.BatchNorm2d(out_channels))
+
+    def forward(self, x):
+        main_path = self.se_path(self.res_path(x))
+        id_path = self.identity_path(x)
+
+        return F.leaky_relu(main_path + id_path)
+
+
 if __name__ == "__main__":
     t = torch.randn(4, 16, 48, 48)
 
-    model = ResNeStBlock(16, 16)
+    model = ResNeStSE(16, 16, 2, 1)
 
     print(model(t).shape)
