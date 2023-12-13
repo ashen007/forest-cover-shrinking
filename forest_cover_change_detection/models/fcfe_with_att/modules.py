@@ -1,30 +1,37 @@
 import math
-
+import warnings
 import torch
 import numpy as np
 
 from torch import nn
 from torch.nn import functional as F
 
+warnings.filterwarnings(action='ignore')
+
 
 class SelfAttention(nn.Module):
 
-    def __init__(self, channels):
+    def __init__(self, in_channels, out_channels, scale_fac):
         super(SelfAttention, self).__init__()
 
-        self.channels = channels
-        self.query = nn.Conv1d(channels, channels // 8, 1, bias=False)
-        self.key = nn.Conv1d(channels, channels // 8, 1, bias=False)
-        self.value = nn.Conv1d(channels, channels, 1, bias=False)
+        self.channels = in_channels
+        self.query = nn.Conv2d(in_channels, in_channels, 1, device='cuda')
+        self.key = nn.Conv2d(in_channels, in_channels, 1, device='cuda')
+        self.value = nn.Conv2d(in_channels, in_channels, 1, device='cuda')
+        self.up = nn.ConvTranspose2d(in_channels, out_channels, 1, scale_fac, output_padding=scale_fac - 1, device='cuda')
 
     def forward(self, x):
-        size = x.shape
-        x = x.view(*size[:2], -1)  # (16, 128, 256)
-        f, g, h = self.query(x), self.key(x), self.value(x)
-        beta = F.softmax(torch.bmm(f.transpose(1, 2), g) / np.sqrt(self.channels), dim=1)  # (16, 256, 256)
-        out = torch.bmm(h, beta)  # (16, 128, 256)
+        n, c, h, w = x.shape
+        proj_query = self.query(x).reshape(n, -1, w * h).transpose(2, 1)
+        proj_key = self.key(x).reshape(n, -1, w * h)
+        energy = torch.bmm(proj_query, proj_key)
+        attention = F.softmax(energy)
+        proj_value = self.value(x).reshape(n, -1, w * h)
 
-        return out.view(*size).contiguous()
+        out = torch.bmm(proj_value, attention.transpose(2, 1))
+        out = out.reshape(n, c, h, w)
+
+        return self.up(out)
 
 
 class AdditiveAttentionGate(nn.Module):
@@ -200,8 +207,8 @@ class MultiSpectralAttentionLayer(nn.Module):
 
 
 if __name__ == '__main__':
-    s = torch.randn(16, 32, 128, 128)
+    s = torch.randn(16, 256, 8, 8)
 
-    model = MultiSpectralAttentionLayer(32, 14, 14)
+    model = SelfAttention(256, 1)
 
     print(model(s).shape)
