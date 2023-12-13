@@ -89,6 +89,7 @@ class AdaConv2d(nn.Module):
         self.n_kernels_output = n_outputs
         self.layer = []
         self.dtype = torch.cuda.FloatTensor
+
         for j in range(self.n_kernels_output):
             vartmp = []
             for i in range(self.n_kernels_input):
@@ -100,10 +101,12 @@ class AdaConv2d(nn.Module):
                                            self.n_kernels_output,
                                            x.shape[2],
                                            x.shape[3]).type(self.dtype))
+
         for i in range(self.n_kernels_output):
             for j in range(self.n_kernels_input):
                 img_tmp = self.layer[i][j](x[:, j, :, :].view(x.shape[0], 1, x.shape[2], x.shape[3]))
                 self.output[:, i, :, :] += img_tmp.view(x.shape[0], x.shape[2], x.shape[3])
+
         return self.output
 
 

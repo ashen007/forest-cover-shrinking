@@ -5,36 +5,9 @@ import numpy as np
 
 from torch import nn
 from torch.nn import functional as F
+from forest_cover_change_detection.layers.conv_ import AdaConv2d
 
 warnings.filterwarnings(action='ignore')
-
-
-class SelfAttention(nn.Module):
-
-    def __init__(self, in_channels, out_channels, scale_fac):
-        super(SelfAttention, self).__init__()
-
-        self.query = nn.Conv2d(in_channels, in_channels, 1, device='cuda')
-        self.key = nn.Conv2d(in_channels, in_channels, 1, device='cuda')
-        self.value = nn.Conv2d(in_channels, in_channels, 1, device='cuda')
-
-        self.up = nn.ConvTranspose2d(in_channels, out_channels, 1, scale_fac, output_padding=(scale_fac - 1),
-                                     device='cuda')
-
-    def forward(self, x):
-        n, c, h, w = x.shape
-        layer_norm = nn.LayerNorm(x.shape, device='cuda')
-
-        q = layer_norm(self.query(x)).view(n, c, -1)
-        k = layer_norm(self.key(x)).view(n, c, -1)
-        v = layer_norm(self.value(x)).view(n, c, -1)
-
-        energy = F.softmax(torch.bmm(q.transpose(1, 2), k), dim=1)
-        out = torch.bmm(v, energy)
-
-        out += x.view(n, c, -1)
-
-        return self.up(out.view(x.shape))  # self.up(out)
 
 
 class AdditiveAttentionGate(nn.Module):
@@ -209,10 +182,52 @@ class MultiSpectralAttentionLayer(nn.Module):
         return x * y.expand_as(x)
 
 
-if __name__ == '__main__':
-    s = torch.randn(16, 256, 8, 8).cuda()
+class EfficientAttention(nn.Module):
 
-    model = SelfAttention(256, 16, 4)
+    def __init__(self, in_channels, n_heads=8, sr_ratio=1):
+        super(EfficientAttention, self).__init__()
+
+        head_dim = in_channels // n_heads
+        self.scale = head_dim ** -0.5
+        self.query = nn.Linear(in_channels, in_channels)
+        self.key_value = nn.Linear(in_channels, in_channels * 2)
+        self.proj = nn.Linear(in_channels, in_channels)
+        self.n_heads = n_heads
+        self.sr_ratio = sr_ratio
+
+        if sr_ratio > 1:
+            self.sr = nn.Conv2d(in_channels, in_channels, sr_ratio, sr_ratio)
+            self.norm = nn.LayerNorm(in_channels)
+
+    def forward(self, x, h, w):
+        b, n, c = x.shape
+        q = self.query(x).view(b, n, self.n_heads, c // self.n_heads).permute(0, 2, 1, 3)
+
+        if self.sr_ratio > 1:
+            x_ = x.permute(0, 2, 1).view(b, c, h, w)
+            x_ = self.sr(x_).view(b, c, -1).permute(0, 2, 1)
+            x_ = self.norm(x_)
+            kv = self.key_value(x_).view(b, -1, 2, self.n_heads, c // self.n_heads).permute(2, 0, 3, 1, 4)
+
+        else:
+            kv = self.key_value(x).view(b, -1, 2, self.n_heads, c // self.n_heads).permute(2, 0, 3, 1, 4)
+
+        key, value = kv[0], kv[1]
+        attn = (q @ key.transpose(2, 3)) * self.scale
+        attn = F.softmax(attn, dim=-1)
+
+        x = (attn @ value).transpose(1, 2)#.view(b, n, c)
+        # x = self.proj(x)
+
+        return x
+
+
+if __name__ == '__main__':
+    s = torch.randn(16, 16, 128, 128).cuda()
+    s = s.view(16, 16, -1)
+    print(f"s: {s.shape}")
+
+    model = EfficientAttention(16384)
     model.cuda()
 
-    print(model(s).shape)
+    print(model(s, 128, 128).shape)
