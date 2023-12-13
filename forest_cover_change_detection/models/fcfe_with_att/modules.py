@@ -14,24 +14,27 @@ class SelfAttention(nn.Module):
     def __init__(self, in_channels, out_channels, scale_fac):
         super(SelfAttention, self).__init__()
 
-        self.channels = in_channels
         self.query = nn.Conv2d(in_channels, in_channels, 1, device='cuda')
         self.key = nn.Conv2d(in_channels, in_channels, 1, device='cuda')
         self.value = nn.Conv2d(in_channels, in_channels, 1, device='cuda')
-        self.up = nn.ConvTranspose2d(in_channels, out_channels, 1, scale_fac, output_padding=scale_fac - 1, device='cuda')
+
+        self.up = nn.ConvTranspose2d(in_channels, out_channels, 1, scale_fac, output_padding=(scale_fac - 1),
+                                     device='cuda')
 
     def forward(self, x):
         n, c, h, w = x.shape
-        proj_query = self.query(x).reshape(n, -1, w * h).transpose(2, 1)
-        proj_key = self.key(x).reshape(n, -1, w * h)
-        energy = torch.bmm(proj_query, proj_key)
-        attention = F.softmax(energy)
-        proj_value = self.value(x).reshape(n, -1, w * h)
+        layer_norm = nn.LayerNorm(x.shape, device='cuda')
 
-        out = torch.bmm(proj_value, attention.transpose(2, 1))
-        out = out.reshape(n, c, h, w)
+        q = layer_norm(self.query(x)).view(n, c, -1)
+        k = layer_norm(self.key(x)).view(n, c, -1)
+        v = layer_norm(self.value(x)).view(n, c, -1)
 
-        return self.up(out)
+        energy = F.softmax(torch.bmm(q.transpose(1, 2), k), dim=1)
+        out = torch.bmm(v, energy)
+
+        out += x.view(n, c, -1)
+
+        return self.up(out.view(x.shape))  # self.up(out)
 
 
 class AdditiveAttentionGate(nn.Module):
@@ -207,8 +210,9 @@ class MultiSpectralAttentionLayer(nn.Module):
 
 
 if __name__ == '__main__':
-    s = torch.randn(16, 256, 8, 8)
+    s = torch.randn(16, 256, 8, 8).cuda()
 
-    model = SelfAttention(256, 1)
+    model = SelfAttention(256, 16, 4)
+    model.cuda()
 
     print(model(s).shape)
