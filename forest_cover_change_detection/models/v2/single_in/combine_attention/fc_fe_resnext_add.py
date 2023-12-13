@@ -6,10 +6,10 @@ from forest_cover_change_detection.models.fcef.modules import ResNeXtDownSample,
 from forest_cover_change_detection.models.fcfe_with_att.modules import AdditiveAttentionGate
 
 
-class FCFEResNeXt(nn.Module):
+class FCFEResNeXtAdditive(nn.Module):
 
     def __init__(self, in_channels, classes, kernel=3):
-        super(FCFEResNeXt, self).__init__()
+        super(FCFEResNeXtAdditive, self).__init__()
         filters = [16, 32, 64, 128, 256]
         c = 8
 
@@ -139,6 +139,6 @@ class FCFEResNeXt(nn.Module):
 
 if __name__ == '__main__':
     t = torch.randn(4, 6, 128, 128)
-    model = FCFEResNeXt(6, 2)
+    model = FCFEResNeXtAdditive(6, 2)
 
     print(f'out: {model(t).shape}')

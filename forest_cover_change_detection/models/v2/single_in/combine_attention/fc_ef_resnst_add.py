@@ -6,10 +6,10 @@ from forest_cover_change_detection.models.fcef.modules import ResidualDownSample
 from forest_cover_change_detection.models.fcfe_with_att.modules import AdditiveAttentionGate
 
 
-class FCFEResSplitAttention(nn.Module):
+class FCFEResSplitAttentionAdditive(nn.Module):
 
     def __init__(self, in_channels, classes, kernel=3):
-        super(FCFEResSplitAttention, self).__init__()
+        super(FCFEResSplitAttentionAdditive, self).__init__()
         filters = [16, 32, 64, 128, 256]
         self.drop = nn.Dropout(0.2)
 
@@ -148,7 +148,7 @@ class FCFEResSplitAttention(nn.Module):
 
 if __name__ == '__main__':
     t = torch.randn(16, 6, 128, 128).cuda()
-    model = FCFEResSplitAttention(6, 2)
+    model = FCFEResSplitAttentionAdditive(6, 2)
     model.cuda()
 
     print(model(t).shape)
