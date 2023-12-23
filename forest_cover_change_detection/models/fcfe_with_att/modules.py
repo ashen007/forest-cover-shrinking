@@ -216,18 +216,71 @@ class EfficientAttention(nn.Module):
         attn = (q @ key.transpose(2, 3)) * self.scale
         attn = F.softmax(attn, dim=-1)
 
-        x = (attn @ value).transpose(1, 2)#.view(b, n, c)
-        # x = self.proj(x)
+        x = (attn @ value).transpose(1, 2)  # .view(b, n, c)
+        x = self.proj(x)
 
         return x
 
 
+class StripPooling(nn.Module):
+
+    def __init__(self, in_channels, pool_size):
+        super(StripPooling, self).__init__()
+
+        self.pool1 = nn.AdaptiveAvgPool2d(pool_size[0])
+        self.pool2 = nn.AdaptiveAvgPool2d(pool_size[1])
+        self.pool3 = nn.AdaptiveAvgPool2d((1, None))
+        self.pool4 = nn.AdaptiveAvgPool2d((None, 1))
+
+        channels = in_channels // 4
+        self.conv1_1 = nn.Sequential(nn.Conv2d(in_channels, channels, 1, bias=False),
+                                     nn.BatchNorm2d(channels),
+                                     nn.ReLU())
+        self.conv1_2 = nn.Sequential(nn.Conv2d(in_channels, channels, 1, bias=False),
+                                     nn.BatchNorm2d(channels),
+                                     nn.ReLU())
+        self.conv2_0 = nn.Sequential(nn.Conv2d(channels, channels, 3, 1, 1, bias=False),
+                                     nn.BatchNorm2d(channels))
+        self.conv2_1 = nn.Sequential(nn.Conv2d(channels, channels, 3, 1, 1, bias=False),
+                                     nn.BatchNorm2d(channels))
+        self.conv2_2 = nn.Sequential(nn.Conv2d(channels, channels, 3, 1, 1, bias=False),
+                                     nn.BatchNorm2d(channels))
+        self.conv2_3 = nn.Sequential(nn.Conv2d(channels, channels, (1, 3), 1, (0, 1), bias=False),
+                                     nn.BatchNorm2d(channels))
+        self.conv2_4 = nn.Sequential(nn.Conv2d(channels, channels, (3, 1), 1, (1, 0), bias=False),
+                                     nn.BatchNorm2d(channels))
+        self.conv2_5 = nn.Sequential(nn.Conv2d(channels, channels, 3, 1, 1, bias=False),
+                                     nn.BatchNorm2d(channels),
+                                     nn.ReLU())
+        self.conv2_6 = nn.Sequential(nn.Conv2d(channels, channels, 3, 1, 1, bias=False),
+                                     nn.BatchNorm2d(channels),
+                                     nn.ReLU())
+        self.conv3 = nn.Sequential(nn.Conv2d(channels * 2, in_channels, 1, bias=False),
+                                   nn.BatchNorm2d(in_channels))
+
+    def forward(self, x):
+        _, _, h, w = x.shape
+
+        x1 = self.conv1_1(x)
+        x2 = self.conv1_2(x)
+        x2_1 = self.conv2_0(x1)
+        x2_2 = F.interpolate(self.conv2_1(self.pool1(x1)), (h, w))
+        x2_3 = F.interpolate(self.conv2_2(self.pool2(x1)), (h, w))
+        x2_4 = F.interpolate(self.conv2_3(self.pool3(x2)), (h, w))
+        x2_5 = F.interpolate(self.conv2_4(self.pool4(x2)), (h, w))
+
+        x1 = self.conv2_5(F.leaky_relu(x2_1 + x2_2 + x2_3))
+        x2 = self.conv2_6(F.leaky_relu(x2_5 + x2_4))
+        x_out = self.conv3(torch.cat([x1, x2], dim=1))
+
+        return F.leaky_relu(x + x_out)
+
+
 if __name__ == '__main__':
     s = torch.randn(16, 16, 128, 128).cuda()
-    s = s.view(16, 16, -1)
     print(f"s: {s.shape}")
 
-    model = EfficientAttention(16384)
+    model = StripPooling(16, (20, 12))
     model.cuda()
 
-    print(model(s, 128, 128).shape)
+    print(model(s).shape)
