@@ -1,7 +1,7 @@
 from torch import nn
 
 from runs.r_and_d.net_trainer import *
-from forest_cover_change_detection.models.v2.temp.fc_ef_res_nst_focat import FCFEResNstWithFocAt
+from forest_cover_change_detection.models.v2.single_in.combine_attention.fc_ef_resnst_focat import FCFEResNstWithFocAt
 
 if __name__ == "__main__":
     config = Config('../../../../data/annotated/',
