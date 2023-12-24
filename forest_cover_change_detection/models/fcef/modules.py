@@ -3,7 +3,8 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from forest_cover_change_detection.layers.activation_ import RSoftMax
-from forest_cover_change_detection.models.fcfe_with_att.modules import MultiSpectralAttentionLayer, MultiSpectralDCTLayer
+from forest_cover_change_detection.models.fcfe_with_att.modules import MultiSpectralAttentionLayer, \
+    MultiSpectralDCTLayer
 
 
 class BaseFeatureExtractor(nn.Module):
@@ -348,7 +349,7 @@ class ResNeXtFCA(nn.Module):
 
     def __init__(self, in_channels, out_channels, c):
         super(ResNeXtFCA, self).__init__()
-        c2wh = dict([(16, 112), (32, 56), (64, 28), (128, 14), (256, 7)])
+        c2wh = dict([(16, 112), (32, 56), (64, 28), (128, 14), (256, 7), (512, 3)])
 
         self.res_path = ResNeXtDownSample(in_channels, out_channels, c)
         self.cha_path = MultiSpectralAttentionLayer(out_channels, c2wh[out_channels], c2wh[out_channels], 8)
