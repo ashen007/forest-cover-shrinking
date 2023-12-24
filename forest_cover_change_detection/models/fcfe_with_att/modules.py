@@ -276,11 +276,36 @@ class StripPooling(nn.Module):
         return F.leaky_relu(x + x_out)
 
 
+class SelfCalibrationConvGate(nn.Module):
+
+    def __init__(self, in_channels, out_channels, stride, padding, dilation, groups, output_pooling):
+        super(SelfCalibrationConvGate, self).__init__()
+
+        self.k2 = nn.Sequential(nn.AvgPool2d(output_pooling, output_pooling),
+                                nn.Conv2d(in_channels, out_channels, 3, 1,
+                                          padding=padding, dilation=dilation, groups=groups, bias=False),
+                                nn.BatchNorm2d(out_channels))
+        self.k3 = nn.Sequential(nn.Conv2d(in_channels, out_channels, 3, 1,
+                                          padding=padding, dilation=dilation, groups=groups, bias=False),
+                                nn.BatchNorm2d(out_channels))
+        self.k4 = nn.Sequential(nn.Conv2d(in_channels, out_channels, 3, stride,
+                                          padding=padding, dilation=dilation, groups=groups, bias=False),
+                                nn.BatchNorm2d(out_channels))
+
+    def forward(self, x):
+        out = F.sigmoid(torch.add(x, F.interpolate(self.k2(x), x.shape[2:])))
+        out = torch.multiply(self.k3(x), out)
+        out = self.k4(out)
+
+        return out
+
+
 if __name__ == '__main__':
     s = torch.randn(16, 16, 128, 128).cuda()
     print(f"s: {s.shape}")
 
-    model = StripPooling(16, (20, 12))
+    model = SelfCalibrationConvGate(16, 16, 1,
+                                    2, 2, 1, 4)
     model.cuda()
 
     print(model(s).shape)
