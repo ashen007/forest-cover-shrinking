@@ -47,11 +47,11 @@ def training_summary(root):
     return train_loss_df, val_loss_df
 
 
-def training_curves(t, v, labels=None):
-    plt.figure(figsize=(24, 12), dpi=300)
+def training_curves(t, v, fig_size=(24, 24), labels=None):
+    plt.figure(figsize=fig_size, dpi=300)
     plt.subplot(2, 1, 1)
     sns.lineplot(data=t, dashes=False,
-                 palette=sns.color_palette('BrBG', 9), ci=None)
+                 palette=sns.color_palette('BrBG'), ci=None)
     plt.xlabel('epochs')
     plt.ylabel('train loss')
 
@@ -60,17 +60,19 @@ def training_curves(t, v, labels=None):
 
     plt.subplot(2, 1, 2)
     sns.lineplot(data=v, dashes=False,
-                 palette=sns.color_palette('BrBG', 9), ci=None)
+                 palette=sns.color_palette('BrBG'), ci=None)
     plt.xlabel('epochs')
     plt.ylabel('val loss')
 
     if labels is not None:
         plt.legend(labels)
+
+    plt.savefig('./loss_curve.png')
     plt.show()
 
 
-def model_heatmap(df, labels=None):
-    plt.figure(figsize=(12, 6), dpi=200)
+def model_heatmap(df, fig_size=(12, 6), labels=None):
+    plt.figure(figsize=fig_size, dpi=200)
     g = sns.heatmap(df,
                     annot=True,
                     cbar=False,
@@ -81,4 +83,6 @@ def model_heatmap(df, labels=None):
 
     g.set_xticklabels(['overall acc', 'chng acc', 'no chng acc',
                        'precision', 'recall', 'dice', 'kappa', 'f-1'])
+
+    plt.savefig('./metrics.png')
     plt.show()
