@@ -162,10 +162,10 @@ class MultiSpectralAttentionLayer(nn.Module):
         map_x = [temp_x * (dct_h // 7) for temp_x in map_x]
         map_y = [temp_y * (dct_w // 7) for temp_y in map_y]
 
-        self.dct_layer = MultiSpectralDCTLayer(dct_h, dct_w, map_x, map_y, in_channel)
-        self.fc = nn.Sequential(nn.Linear(in_channel, in_channel // reduction),
+        self.dct_layer = MultiSpectralDCTLayer(dct_h, dct_w, map_x, map_y, in_channel).cuda()
+        self.fc = nn.Sequential(nn.Linear(in_channel, in_channel // reduction, device='cuda'),
                                 nn.LeakyReLU(),
-                                nn.Linear(in_channel // reduction, in_channel),
+                                nn.Linear(in_channel // reduction, in_channel, device='cuda'),
                                 nn.Sigmoid()
                                 )
 

@@ -6,10 +6,10 @@ from forest_cover_change_detection.models.fcef.modules import ResidualDownSample
 from forest_cover_change_detection.models.fcef.modules import ResNeStFCA, MultiSpectralAttentionLayer
 
 
-class FCFEResNeStFCAv1(nn.Module):
+class FCFEResNeStFCAv2(nn.Module):
 
     def __init__(self, in_channels, classes, kernel=3):
-        super(FCFEResNeStFCAv1, self).__init__()
+        super(FCFEResNeStFCAv2, self).__init__()
         filters = [16, 32, 64, 128, 256]
         self.drop = nn.Dropout(0.2)
         self.c2wh = dict([(16, 112), (32, 56), (64, 28), (128, 14), (256, 7)])
@@ -130,7 +130,7 @@ class FCFEResNeStFCAv1(nn.Module):
         cat_1 = MultiSpectralAttentionLayer(s_4[1], self.c2wh[s_4[1]], self.c2wh[s_4[1]])
 
         # concat skip connection and up-sampled layer from below
-        xu_1 = torch.cat((cat_1(xd_4_b1 - xd_4_b2), pad_1(xu_1)), dim=1)
+        xu_1 = torch.cat(((cat_1(xd_4_b1) - cat_1(xd_4_b2)), pad_1(xu_1)), dim=1)
 
         xu_2_b = self.up_feat_ext_block_2(xu_1)
         xu_2 = self.up_block_2(xu_2_b)
@@ -138,7 +138,7 @@ class FCFEResNeStFCAv1(nn.Module):
         cat_2 = MultiSpectralAttentionLayer(s_3[1], self.c2wh[s_3[1]], self.c2wh[s_3[1]])
 
         # concat skip connection and up-sampled layer from below
-        xu_2 = torch.cat((cat_2(xd_3_b1 - xd_3_b2), pad_2(xu_2)), dim=1)
+        xu_2 = torch.cat(((cat_2(xd_3_b1) - cat_2(xd_3_b2)), pad_2(xu_2)), dim=1)
 
         xu_3_b = self.up_feat_ext_block_3(xu_2)
         xu_3 = self.up_block_3(xu_3_b)
@@ -146,7 +146,7 @@ class FCFEResNeStFCAv1(nn.Module):
         cat_3 = MultiSpectralAttentionLayer(s_2[1], self.c2wh[s_2[1]], self.c2wh[s_2[1]])
 
         # concat skip connection and up-sampled layer from below
-        xu_3 = torch.cat((cat_3(xd_2_b1 - xd_2_b2), pad_3(xu_3)), dim=1)
+        xu_3 = torch.cat(((cat_3(xd_2_b1) - cat_3(xd_2_b2)), pad_3(xu_3)), dim=1)
 
         xu_4_b = self.up_feat_ext_block_4(xu_3)
         xu_4 = self.up_block_4(xu_4_b)
@@ -154,7 +154,7 @@ class FCFEResNeStFCAv1(nn.Module):
         cat_4 = MultiSpectralAttentionLayer(s_1[1], self.c2wh[s_1[1]], self.c2wh[s_1[1]])
 
         # concat skip connection and up-sampled layer from below
-        xu_4 = torch.cat((cat_4(xd_1_b1 - xd_1_b2), pad_4(xu_4)), dim=1)
+        xu_4 = torch.cat(((cat_4(xd_1_b1) - cat_4(xd_1_b2)), pad_4(xu_4)), dim=1)
 
         xu_5_b = self.up_feat_ext_block_5(xu_4)
         xu_5 = self.up_block_5(xu_5_b)
@@ -168,7 +168,7 @@ class FCFEResNeStFCAv1(nn.Module):
 if __name__ == '__main__':
     t_1 = torch.randn(16, 3, 128, 128).cuda()
     t_2 = torch.randn(16, 3, 128, 128).cuda()
-    model = FCFEResNeStFCAv1(3, 2)
+    model = FCFEResNeStFCAv2(3, 2)
     model.cuda()
 
     print(model(t_1, t_2).shape)
