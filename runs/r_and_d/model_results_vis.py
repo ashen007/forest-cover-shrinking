@@ -76,7 +76,6 @@ def vis_models_prediction(df, figsize, path=None):
         axes[i, 3].axis(False)
         axes[i, 3].set_xlabel('pred')
 
-
     plt.savefig(f'{path}/comp.png')
 
 

@@ -304,8 +304,7 @@ if __name__ == '__main__':
     s = torch.randn(16, 16, 128, 128).cuda()
     print(f"s: {s.shape}")
 
-    model = SelfCalibrationConvGate(16, 16, 1,
-                                    2, 2, 1, 4)
+    model = MultiSpectralAttentionLayer(16, 112, 112)
     model.cuda()
 
     print(model(s).shape)
