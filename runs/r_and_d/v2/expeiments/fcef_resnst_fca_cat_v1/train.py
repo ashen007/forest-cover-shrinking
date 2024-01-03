@@ -3,6 +3,7 @@ from runs.r_and_d.net_trainer import *
 from forest_cover_change_detection.models.v2.experimental.ch_at_concat.fc_ef_resnst_fca_cat import FCFEResNeStFCAv1
 
 if __name__ == "__main__":
+    """tested with apply attention to concatenation step of siam"""
     config = Config('../../../../../data/annotated/',
                     '../../../../../data/annotated/train.csv',
                     '../../../../../data/annotated/test.csv',

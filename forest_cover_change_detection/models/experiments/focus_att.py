@@ -47,7 +47,7 @@ class FocusAttentionGateV2(nn.Module):
 
         ch_at = self.channel_att(merge)
         sp_at = self.spatial_att(merge)
-        resample = self.resampler(torch.exp(ch_at * sp_at))
+        resample = self.resampler(torch.sigmoid(ch_at * sp_at))
 
         return resample * skip
 
