@@ -92,15 +92,76 @@ class Vit(nn.Module):
         proj_q = self.query(x).view(n, -1, w * h).permute(0, 2, 1)
         proj_k = self.key(x).view(n, -1, w * h)
         energy = torch.bmm(proj_q, proj_k)
-        att_scores = F.softmax(energy)
+        att_scores = F.softmax(energy, dim=-1)
+        proj_v = self.value(x).view(n, -1, w * h)
 
-        return att_scores
+        return torch.bmm(proj_v, att_scores.permute(0, 2, 1)).view(n, -1, w, h)
 
 
 class DualAttentionV1(nn.Module):
 
-    def __init__(self):
+    def __init__(self, gate_channels, skip_channels, additive=True):
         super(DualAttentionV1, self).__init__()
 
+        self.additive = additive
+        self.query = nn.Conv2d(gate_channels, skip_channels, 1, device='cuda')
+        self.value = nn.Conv2d(skip_channels, skip_channels, 1, 2, device='cuda')
+
+        if additive:
+            self.se = SqueezeExcitation(skip_channels).cuda()
+        else:
+            self.se = SqueezeExcitation(2 * skip_channels).cuda()
+
     def forward(self, skip_con, gate_signal):
-        return
+        g = self.query(gate_signal)
+        s = self.value(skip_con)
+
+        if self.additive:
+            additive = F.relu((g + s))
+            w = F.sigmoid(self.se(additive))
+
+        else:
+            concat = F.relu(torch.cat((g, s), dim=1))
+            w = F.sigmoid(self.se(concat))
+
+        return skip_con * w
+
+
+class DualAttentionV2(nn.Module):
+
+    def __init__(self, gate_channels, skip_channels, additive=True):
+        super(DualAttentionV2, self).__init__()
+
+        self.additive = additive
+        self.query = nn.Conv2d(gate_channels, skip_channels, 1, device='cuda')
+        self.value = nn.Conv2d(skip_channels, skip_channels, 1, device='cuda')
+
+        if additive:
+            self.vit = Vit(skip_channels).cuda()
+        else:
+            self.vit = Vit(2 * skip_channels).cuda()
+
+    def forward(self, skip_con, gate_signal):
+        _, _, w1, h1 = skip_con.shape
+        _, _, w2, h2 = gate_signal.shape
+        scale_by = w1 // w2
+        g = self.query(gate_signal)
+        s = self.value(skip_con)
+
+        if self.additive:
+            additive = F.relu((F.interpolate(g, scale_factor=scale_by) + s))
+            w = F.sigmoid(self.vit(additive))
+
+        else:
+            concat = F.relu(torch.cat((F.interpolate(g, scale_factor=scale_by), s), dim=1))
+            w = F.sigmoid(self.vit(concat))
+
+        return skip_con * w
+
+
+if __name__ == '__main__':
+    s = torch.randn(4, 16, 16, 16).cuda()
+    g = torch.randn(4, 32, 4, 4).cuda()
+    m = DualAttentionV2(32, 16).cuda()
+
+    print(m(s, g).shape)
