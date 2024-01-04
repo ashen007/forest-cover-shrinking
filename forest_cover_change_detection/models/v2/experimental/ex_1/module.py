@@ -4,14 +4,24 @@ from torch import nn
 from torch.nn.modules.padding import ReplicationPad2d
 from forest_cover_change_detection.models.fcef.modules import ResidualDownSample, UpSample
 from forest_cover_change_detection.models.fcef.modules import ResNeStBlock
+from forest_cover_change_detection.models.v2.experimental.new_gates.modules import DualAttentionV1, DualAttentionV2
 
 
 class FCFEResSplitAttention(nn.Module):
+    """
+    improve an additive attention gate by adding channel and spatial
+    attention blocks instead of the original block
 
-    def __init__(self, in_channels, classes, kernel=3):
+    experiments:
+        1. test both channel attention and spatial attention inside gate
+        2. test addition vs. concatenation of paths
+    """
+
+    def __init__(self, in_channels, classes=2, kernel=3, additive=True, type_='ch'):
         super(FCFEResSplitAttention, self).__init__()
         filters = [16, 32, 64, 128, 256]
-        self.drop = nn.Dropout(0.2)
+        self.additive = additive
+        self.type_ = type_
 
         # down sampling
         self.feat_ext_block_1 = nn.Sequential(ResidualDownSample(in_channels, filters[0]),
@@ -127,29 +137,73 @@ class FCFEResSplitAttention(nn.Module):
         xu_1 = self.up_block_1(xu_1_b)
         pad_1 = ReplicationPad2d((0, (s_4[3] - xu_1.shape[3]), 0, (s_4[2] - xu_1.shape[2])))
 
+        if self.type_ == 'ch':
+            gate_1 = DualAttentionV1(xu_1_b.shape[1], s_4[1], self.additive)
+        else:
+            gate_1 = DualAttentionV2(256, s_4[1], self.additive)
+
         # concat skip connection and up-sampled layer from below
-        xu_1 = torch.cat(((xd_4_b1 - xd_4_b2), pad_1(xu_1)), dim=1)
+        skip_conn = (xd_4_b1 - xd_4_b2)
+        if self.type_ == 'ch':
+            attend_1 = gate_1(skip_conn, xu_1_b)
+        else:
+            attend_1 = gate_1(skip_conn, (xd_5_b1 - xd_5_b2))
+
+        xu_1 = torch.cat((attend_1, pad_1(xu_1)), dim=1)
 
         xu_2_b = self.up_feat_ext_block_2(xu_1)
         xu_2 = self.up_block_2(xu_2_b)
         pad_2 = ReplicationPad2d((0, (s_3[3] - xu_2.shape[3]), 0, (s_3[2] - xu_2.shape[2])))
 
+        if self.type_ == 'ch':
+            gate_2 = DualAttentionV1(xu_2_b.shape[1], s_3[1], self.additive)
+        else:
+            gate_2 = DualAttentionV2(256, s_3[1], self.additive)
+
         # concat skip connection and up-sampled layer from below
-        xu_2 = torch.cat(((xd_3_b1 - xd_3_b2), pad_2(xu_2)), dim=1)
+        skip_conn = (xd_3_b1 - xd_3_b2)
+        if self.type_ == 'ch':
+            attend_2 = gate_2(skip_conn, xu_2_b)
+        else:
+            attend_2 = gate_2(skip_conn, (xd_5_b1 - xd_5_b2))
+
+        xu_2 = torch.cat((attend_2, pad_2(xu_2)), dim=1)
 
         xu_3_b = self.up_feat_ext_block_3(xu_2)
         xu_3 = self.up_block_3(xu_3_b)
         pad_3 = ReplicationPad2d((0, (s_2[3] - xu_3.shape[3]), 0, (s_2[2] - xu_3.shape[2])))
 
+        if self.type_ == 'ch':
+            gate_3 = DualAttentionV1(xu_3_b.shape[1], s_2[1], self.additive)
+        else:
+            gate_3 = DualAttentionV2(256, s_2[1], self.additive)
+
         # concat skip connection and up-sampled layer from below
-        xu_3 = torch.cat(((xd_2_b1 - xd_2_b2), pad_3(xu_3)), dim=1)
+        skip_conn = (xd_2_b1 - xd_2_b2)
+        if self.type_ == 'ch':
+            attend_3 = gate_3(skip_conn, xu_3_b)
+        else:
+            attend_3 = gate_3(skip_conn, (xd_5_b1 - xd_5_b2))
+
+        xu_3 = torch.cat((attend_3, pad_3(xu_3)), dim=1)
 
         xu_4_b = self.up_feat_ext_block_4(xu_3)
         xu_4 = self.up_block_4(xu_4_b)
         pad_4 = ReplicationPad2d((0, (s_1[3] - xu_4.shape[3]), 0, (s_1[2] - xu_4.shape[2])))
 
+        if self.type_ == 'ch':
+            gate_4 = DualAttentionV1(xu_4_b.shape[1], s_1[1], self.additive)
+        else:
+            gate_4 = DualAttentionV2(256, s_1[1], self.additive)
+
         # concat skip connection and up-sampled layer from below
-        xu_4 = torch.cat(((xd_1_b1 - xd_1_b2), pad_4(xu_4)), dim=1)
+        skip_conn = (xd_1_b1 - xd_1_b2)
+        if self.type_ == 'ch':
+            attend_4 = gate_4(skip_conn, xu_4_b)
+        else:
+            attend_4 = gate_4(skip_conn, (xd_5_b1 - xd_5_b2))
+
+        xu_4 = torch.cat((attend_4, pad_4(xu_4)), dim=1)
 
         xu_5_b = self.up_feat_ext_block_5(xu_4)
         xu_5 = self.up_block_5(xu_5_b)
@@ -163,7 +217,7 @@ class FCFEResSplitAttention(nn.Module):
 if __name__ == '__main__':
     t_1 = torch.randn(16, 3, 128, 128).cuda()
     t_2 = torch.randn(16, 3, 128, 128).cuda()
-    model = FCFEResSplitAttention(3, 2)
+    model = FCFEResSplitAttention(3, type_='sp', additive=False)
     model.cuda()
 
     print(model(t_1, t_2).shape)

@@ -204,8 +204,8 @@ class DualAttentionV4(nn.Module):
 
 
 if __name__ == '__main__':
-    s = torch.randn(4, 16, 128, 128).cuda()
+    s = torch.randn(4, 32, 64, 64).cuda()
     g = torch.randn(4, 256, 8, 8).cuda()
-    m = DualAttentionV3(256, 16, True, (8, 16)).cuda()
+    m = DualAttentionV4(256, 32, True).cuda()
 
     print(m(s, g).shape)
