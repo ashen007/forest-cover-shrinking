@@ -203,9 +203,42 @@ class DualAttentionV4(nn.Module):
         return out
 
 
+class DualAttentionV5(nn.Module):
+
+    def __init__(self, gate_channels, skip_channels, pool_size, concat_ops='skip'):
+        super(DualAttentionV5, self).__init__()
+
+        self.concat_ops = concat_ops
+        self.query = nn.Conv2d(gate_channels, skip_channels, 1, device='cuda')
+        self.value = nn.Conv2d(skip_channels, skip_channels, 1, device='cuda')
+        self.beta = nn.Conv2d(skip_channels, 1, 1, device='cuda')
+        self.se = SqueezeExcitation(skip_channels).cuda()
+        self.strip_pool = StripPooling(skip_channels, pool_size)
+
+    def forward(self, skip_con, gate_signal):
+        _, _, w1, h1 = skip_con.shape
+        _, _, w2, h2 = gate_signal.shape
+        scale_by = w1 // w2
+
+        g = self.query(gate_signal)
+        s = self.value(skip_con)
+
+        additive = F.relu((F.interpolate(g, scale_factor=scale_by) + s))
+        s_w = F.sigmoid(self.beta(additive))
+        c_w = F.relu(self.se(additive))
+        co_w = self.strip_pool(additive)
+
+        if self.concat_ops == 'skip':
+            out = skip_con * s_w + skip_con * c_w + F.relu(skip_con + co_w)
+        else:
+            out = additive * s_w + additive * c_w + F.relu(additive + co_w)
+
+        return out
+
+
 if __name__ == '__main__':
     s = torch.randn(4, 32, 64, 64).cuda()
-    g = torch.randn(4, 256, 8, 8).cuda()
-    m = DualAttentionV4(256, 32, True).cuda()
+    g = torch.randn(4, 64, 32, 32).cuda()
+    m = DualAttentionV5(64, 32, (40, 24)).cuda()
 
     print(m(s, g).shape)
