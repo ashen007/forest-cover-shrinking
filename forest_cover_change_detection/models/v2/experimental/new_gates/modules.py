@@ -2,6 +2,7 @@ import torch
 
 from torch import nn
 from torch.nn import functional as F
+from forest_cover_change_detection.models.fcfe_with_att.modules import StripPooling
 
 
 class SqueezeExcitation(nn.Module):
@@ -22,60 +23,6 @@ class SqueezeExcitation(nn.Module):
         x_ = self.se_block(x_).view(b, c, 1, 1)
 
         return x_
-
-
-class StripPooling(nn.Module):
-
-    def __init__(self, in_channels, pool_size):
-        super(StripPooling, self).__init__()
-
-        self.pool1 = nn.AdaptiveAvgPool2d(pool_size[0])
-        self.pool2 = nn.AdaptiveAvgPool2d(pool_size[1])
-        self.pool3 = nn.AdaptiveAvgPool2d((1, None))
-        self.pool4 = nn.AdaptiveAvgPool2d((None, 1))
-
-        channels = in_channels // 4
-        self.conv1_1 = nn.Sequential(nn.Conv2d(in_channels, channels, 1, bias=False, device='cuda'),
-                                     nn.BatchNorm2d(channels, device='cuda'),
-                                     nn.ReLU())
-        self.conv1_2 = nn.Sequential(nn.Conv2d(in_channels, channels, 1, bias=False, device='cuda'),
-                                     nn.BatchNorm2d(channels, device='cuda'),
-                                     nn.ReLU())
-        self.conv2_0 = nn.Sequential(nn.Conv2d(channels, channels, 3, 1, 1, bias=False, device='cuda'),
-                                     nn.BatchNorm2d(channels, device='cuda'))
-        self.conv2_1 = nn.Sequential(nn.Conv2d(channels, channels, 3, 1, 1, bias=False, device='cuda'),
-                                     nn.BatchNorm2d(channels, device='cuda'))
-        self.conv2_2 = nn.Sequential(nn.Conv2d(channels, channels, 3, 1, 1, bias=False, device='cuda'),
-                                     nn.BatchNorm2d(channels, device='cuda'))
-        self.conv2_3 = nn.Sequential(nn.Conv2d(channels, channels, (1, 3), 1, (0, 1), bias=False, device='cuda'),
-                                     nn.BatchNorm2d(channels, device='cuda'))
-        self.conv2_4 = nn.Sequential(nn.Conv2d(channels, channels, (3, 1), 1, (1, 0), bias=False, device='cuda'),
-                                     nn.BatchNorm2d(channels, device='cuda'))
-        self.conv2_5 = nn.Sequential(nn.Conv2d(channels, channels, 3, 1, 1, bias=False, device='cuda'),
-                                     nn.BatchNorm2d(channels, device='cuda'),
-                                     nn.ReLU())
-        self.conv2_6 = nn.Sequential(nn.Conv2d(channels, channels, 3, 1, 1, bias=False, device='cuda'),
-                                     nn.BatchNorm2d(channels, device='cuda'),
-                                     nn.ReLU())
-        self.conv3 = nn.Sequential(nn.Conv2d(channels * 2, in_channels, 1, bias=False, device='cuda'),
-                                   nn.BatchNorm2d(in_channels, device='cuda'))
-
-    def forward(self, x):
-        _, _, h, w = x.shape
-
-        x1 = self.conv1_1(x)
-        x2 = self.conv1_2(x)
-        x2_1 = self.conv2_0(x1)
-        x2_2 = F.interpolate(self.conv2_1(self.pool1(x1)), (h, w))
-        x2_3 = F.interpolate(self.conv2_2(self.pool2(x1)), (h, w))
-        x2_4 = F.interpolate(self.conv2_3(self.pool3(x2)), (h, w))
-        x2_5 = F.interpolate(self.conv2_4(self.pool4(x2)), (h, w))
-
-        x1 = self.conv2_5(F.leaky_relu(x2_1 + x2_2 + x2_3))
-        x2 = self.conv2_6(F.leaky_relu(x2_5 + x2_4))
-        x_out = self.conv3(torch.cat([x1, x2], dim=1))
-
-        return x_out
 
 
 class Vit(nn.Module):
@@ -106,11 +53,10 @@ class DualAttentionV1(nn.Module):
         self.additive = additive
         self.query = nn.Conv2d(gate_channels, skip_channels, 1, device='cuda')
         self.value = nn.Conv2d(skip_channels, skip_channels, 1, 2, device='cuda')
+        self.se = SqueezeExcitation(skip_channels).cuda()
 
-        if additive:
-            self.se = SqueezeExcitation(skip_channels).cuda()
-        else:
-            self.se = SqueezeExcitation(2 * skip_channels).cuda()
+        if not additive:
+            self.press = nn.Conv2d(2 * skip_channels, skip_channels, 1, device='cuda')
 
     def forward(self, skip_con, gate_signal):
         g = self.query(gate_signal)
@@ -118,11 +64,11 @@ class DualAttentionV1(nn.Module):
 
         if self.additive:
             additive = F.relu((g + s))
-            w = F.sigmoid(self.se(additive))
+            w = self.se(additive)
 
         else:
-            concat = F.relu(torch.cat((g, s), dim=1))
-            w = F.sigmoid(self.se(concat))
+            concat = F.relu(self.press(torch.cat((g, s), dim=1)))
+            w = self.se(concat)
 
         return skip_con * w
 
@@ -135,11 +81,10 @@ class DualAttentionV2(nn.Module):
         self.additive = additive
         self.query = nn.Conv2d(gate_channels, skip_channels, 1, device='cuda')
         self.value = nn.Conv2d(skip_channels, skip_channels, 1, device='cuda')
+        self.vit = Vit(skip_channels).cuda()
 
-        if additive:
-            self.vit = Vit(skip_channels).cuda()
-        else:
-            self.vit = Vit(2 * skip_channels).cuda()
+        if not additive:
+            self.press = nn.Conv2d(2 * skip_channels, skip_channels, 1, device='cuda')
 
     def forward(self, skip_con, gate_signal):
         _, _, w1, h1 = skip_con.shape
@@ -150,18 +95,117 @@ class DualAttentionV2(nn.Module):
 
         if self.additive:
             additive = F.relu((F.interpolate(g, scale_factor=scale_by) + s))
-            w = F.sigmoid(self.vit(additive))
+            w = self.vit(F.interpolate(additive, scale_factor=1 / scale_by))
+            w = F.softmax(F.interpolate(w, scale_factor=scale_by), dim=-1)
 
         else:
-            concat = F.relu(torch.cat((F.interpolate(g, scale_factor=scale_by), s), dim=1))
-            w = F.sigmoid(self.vit(concat))
+            concat = F.relu(self.press(torch.cat((F.interpolate(g, scale_factor=scale_by), s), dim=1)))
+            w = self.vit(F.interpolate(concat, scale_factor=1 / scale_by))
+            w = F.softmax(F.interpolate(w, scale_factor=scale_by), dim=-1)
 
         return skip_con * w
 
 
+class DualAttentionV3(nn.Module):
+
+    def __init__(self, gate_channels, skip_channels, additive=True, pool_size=None):
+        super(DualAttentionV3, self).__init__()
+
+        self.additive = additive
+        self.query = nn.Conv2d(gate_channels, skip_channels, 1, device='cuda')
+        self.value = nn.Conv2d(skip_channels, skip_channels, 1, device='cuda')
+        self.vit = Vit(skip_channels).cuda()
+        self.se = SqueezeExcitation(skip_channels).cuda()
+
+        if pool_size is not None:
+            self.app_sp = True
+            self.strip_pool = StripPooling(skip_channels, pool_size)
+        else:
+            self.app_sp = False
+
+        if not additive:
+            self.press = nn.Conv2d(2 * skip_channels, skip_channels, 1, device='cuda')
+
+    def forward(self, skip_con, gate_signal):
+        _, _, w1, h1 = skip_con.shape
+        _, _, w2, h2 = gate_signal.shape
+        scale_by = w1 // w2
+        g = self.query(gate_signal)
+        s = self.value(skip_con)
+
+        if self.additive:
+            additive = F.relu((F.interpolate(g, scale_factor=scale_by) + s))
+            c_w = self.se(additive)
+            s_w = F.interpolate(self.vit(F.interpolate(additive, scale_factor=1 / scale_by)), scale_factor=scale_by)
+            w = F.sigmoid(s_w * c_w)
+
+        else:
+            concat = F.relu(self.press(torch.cat((F.interpolate(g, scale_factor=scale_by), s), dim=1)))
+            c_w = self.se(concat)
+            s_w = F.interpolate(self.vit(F.interpolate(concat, scale_factor=1 / scale_by)), scale_factor=scale_by)
+            w = F.sigmoid(s_w * c_w)
+
+        out = skip_con * w
+
+        if self.app_sp:
+            sp = self.strip_pool(skip_con)
+
+            return torch.cat((out, sp), dim=1)
+
+        return out
+
+
+class DualAttentionV4(nn.Module):
+
+    def __init__(self, gate_channels, skip_channels, additive=True, pool_size=None):
+        super(DualAttentionV4, self).__init__()
+
+        self.app_sp = False
+        self.additive = additive
+        self.query = nn.Conv2d(gate_channels, skip_channels, 1, device='cuda')
+        self.value = nn.Conv2d(skip_channels, skip_channels, 1, device='cuda')
+        self.vit = Vit(skip_channels).cuda()
+        self.se = SqueezeExcitation(skip_channels).cuda()
+
+        if pool_size is not None:
+            self.app_sp = True
+            self.strip_pool = StripPooling(skip_channels, pool_size)
+
+        if not additive:
+            self.press = nn.Conv2d(2 * skip_channels, skip_channels, 1, device='cuda')
+
+    def forward(self, skip_con, gate_signal):
+        _, _, w1, h1 = skip_con.shape
+        _, _, w2, h2 = gate_signal.shape
+        scale_by = w1 // w2
+        g = self.query(gate_signal)
+        s = self.value(skip_con)
+
+        if self.additive:
+            additive = F.relu((F.interpolate(g, scale_factor=scale_by) + s))
+            c_w = self.se(additive)
+            s_w = F.interpolate(self.vit(F.interpolate(additive, scale_factor=1 / scale_by)), scale_factor=scale_by)
+
+            out = torch.cat((skip_con * c_w, s_w), dim=1)
+
+        else:
+            concat = F.relu(self.press(torch.cat((F.interpolate(g, scale_factor=scale_by), s), dim=1)))
+            c_w = self.se(concat)
+            s_w = F.interpolate(self.vit(F.interpolate(concat, scale_factor=1 / scale_by)), scale_factor=scale_by)
+
+            out = torch.cat((skip_con * c_w, s_w), dim=1)
+
+        if self.app_sp:
+            sp = self.strip_pool(skip_con)
+
+            return torch.cat((out, sp), dim=1)
+
+        return out
+
+
 if __name__ == '__main__':
-    s = torch.randn(4, 16, 16, 16).cuda()
-    g = torch.randn(4, 32, 4, 4).cuda()
-    m = DualAttentionV2(32, 16).cuda()
+    s = torch.randn(4, 16, 128, 128).cuda()
+    g = torch.randn(4, 256, 8, 8).cuda()
+    m = DualAttentionV3(256, 16, True, (8, 16)).cuda()
 
     print(m(s, g).shape)
