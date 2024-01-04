@@ -1,16 +1,17 @@
 import torch
 
 from torch import nn
+from torch.nn import functional as F
 from torch.nn.modules.padding import ReplicationPad2d
 from forest_cover_change_detection.models.fcef.modules import ResidualDownSample, UpSample
 from forest_cover_change_detection.models.fcef.modules import ResNeStSE
 from forest_cover_change_detection.models.fcfe_with_att.modules import AdditiveAttentionGate
 
 
-class CombineConceptV1(nn.Module):
+class CombineConceptV2(nn.Module):
 
     def __init__(self, in_channels, classes, kernel=3):
-        super(CombineConceptV1, self).__init__()
+        super(CombineConceptV2, self).__init__()
         filters = [16, 32, 64, 128, 256]
         self.drop = nn.Dropout(0.2)
 
@@ -110,6 +111,15 @@ class CombineConceptV1(nn.Module):
         self.up_block_5 = UpSample(filters[1], filters[0], kernel,
                                    stride=2, padding=0, output_padding=1, blocks=1)  # (16, 256, 256)
 
+        # level outs
+        self.out_1 = nn.Sequential(nn.Conv2d(256, classes, kernel, padding=1),
+                                   nn.LogSoftmax(dim=1))
+        self.out_2 = nn.Sequential(nn.Conv2d(128, classes, kernel, padding=1),
+                                   nn.LogSoftmax(dim=1))
+        self.out_3 = nn.Sequential(nn.Conv2d(64, classes, kernel, padding=1),
+                                   nn.LogSoftmax(dim=1))
+        self.out_4 = nn.Sequential(nn.Conv2d(32, classes, kernel, padding=1),
+                                   nn.LogSoftmax(dim=1))
         self.out_block = nn.Sequential(nn.Conv2d(filters[0], classes, kernel, padding=1),
                                        nn.LogSoftmax(dim=1))  # (2, 256, 256)
 
@@ -157,6 +167,12 @@ class CombineConceptV1(nn.Module):
         xu_1_b = self.up_feat_ext_block_1((xd_5_b1 - xd_5_b2))
         xu_1 = self.up_block_1(xu_1_b)
         pad_1 = ReplicationPad2d((0, (s_4[3] - xu_1.shape[3]), 0, (s_4[2] - xu_1.shape[2])))
+
+        # level out
+        out_1 = pad_1(xu_1)
+        by_1 = s_0[2] // out_1.shape[2]
+        out_1 = self.out_1(F.interpolate(out_1, scale_factor=by_1))
+
         at_gate_1 = AdditiveAttentionGate(xu_1_b.shape[1], xd_4_b1.shape[1])
 
         # concat skip connection and up-sampled layer from below
@@ -165,6 +181,12 @@ class CombineConceptV1(nn.Module):
         xu_2_b = self.up_feat_ext_block_2(xu_1)
         xu_2 = self.up_block_2(xu_2_b)
         pad_2 = ReplicationPad2d((0, (s_3[3] - xu_2.shape[3]), 0, (s_3[2] - xu_2.shape[2])))
+
+        # level out
+        out_2 = pad_2(xu_2)
+        by_2 = s_0[2] // out_2.shape[2]
+        out_2 = self.out_2(F.interpolate(out_2, scale_factor=by_2))
+
         at_gate_2 = AdditiveAttentionGate(xu_2_b.shape[1], xd_3_b1.shape[1])
 
         # concat skip connection and up-sampled layer from below
@@ -173,6 +195,12 @@ class CombineConceptV1(nn.Module):
         xu_3_b = self.up_feat_ext_block_3(xu_2)
         xu_3 = self.up_block_3(xu_3_b)
         pad_3 = ReplicationPad2d((0, (s_2[3] - xu_3.shape[3]), 0, (s_2[2] - xu_3.shape[2])))
+
+        # level out
+        out_3 = pad_3(xu_3)
+        by_3 = s_0[2] // out_3.shape[2]
+        out_3 = self.out_3(F.interpolate(out_3, scale_factor=by_3))
+
         at_gate_3 = AdditiveAttentionGate(xu_3_b.shape[1], xd_2_b1.shape[1])
 
         # concat skip connection and up-sampled layer from below
@@ -181,6 +209,12 @@ class CombineConceptV1(nn.Module):
         xu_4_b = self.up_feat_ext_block_4(xu_3)
         xu_4 = self.up_block_4(xu_4_b)
         pad_4 = ReplicationPad2d((0, (s_1[3] - xu_4.shape[3]), 0, (s_1[2] - xu_4.shape[2])))
+
+        # level out
+        out_4 = pad_4(xu_4)
+        by_4 = s_0[2] // out_4.shape[2]
+        out_4 = self.out_4(F.interpolate(out_4, scale_factor=by_4))
+
         at_gate_4 = AdditiveAttentionGate(xu_4_b.shape[1], xd_1_b1.shape[1])
 
         # concat skip connection and up-sampled layer from below
@@ -192,13 +226,15 @@ class CombineConceptV1(nn.Module):
 
         x_out = self.out_block(pad_5(xu_5))
 
-        return x_out
+        return {1: x_out, by_1: out_1, by_2: out_2, by_3: out_3, by_4: out_4}
 
 
 if __name__ == '__main__':
     t_1 = torch.randn(16, 3, 128, 128).cuda()
     t_2 = torch.randn(16, 3, 128, 128).cuda()
-    model = CombineConceptV1(3, 2)
+    model = CombineConceptV2(3, 2)
     model.cuda()
+    outs = model(t_1, t_2)
 
-    print(model(t_1, t_2).shape)
+    for k, v in outs.items():
+        print(2 ** -(k * k), v.shape)

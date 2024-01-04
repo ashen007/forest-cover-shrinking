@@ -236,9 +236,34 @@ class DualAttentionV5(nn.Module):
         return out
 
 
+class DualAttentionV6(nn.Module):
+
+    def __init__(self, gate_channels, skip_channels):
+        super(DualAttentionV6, self).__init__()
+
+        self.query = nn.Conv2d(gate_channels, skip_channels, 1, device='cuda')
+        self.value = nn.Conv2d(skip_channels, skip_channels, 1, device='cuda')
+        self.beta = nn.Conv2d(skip_channels, 1, 1, device='cuda')
+        self.se = SqueezeExcitation(skip_channels).cuda()
+
+    def forward(self, skip_con, gate_signal):
+        _, _, w1, h1 = skip_con.shape
+        _, _, w2, h2 = gate_signal.shape
+        scale_by = w1 // w2
+
+        g = self.query(gate_signal)
+        s = self.value(skip_con)
+
+        additive = F.relu((F.interpolate(g, scale_factor=scale_by) + s))
+        s_w = F.sigmoid(self.beta(additive))
+        c_w = self.se(additive)
+
+        return skip_con * F.sigmoid(s_w * c_w)
+
+
 if __name__ == '__main__':
     s = torch.randn(4, 32, 64, 64).cuda()
     g = torch.randn(4, 64, 32, 32).cuda()
-    m = DualAttentionV5(64, 32, (40, 24)).cuda()
+    m = DualAttentionV6(64, 32).cuda()
 
     print(m(s, g).shape)
