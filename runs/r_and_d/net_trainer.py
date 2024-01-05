@@ -134,13 +134,13 @@ def evaluate(df, config):
 
             if not config.multi_in:
                 if config.multi_out:
-                    logits = config.model(torch.cat((img1, img2), dim=0).unsqueeze(0).to('cuda'))[1][0].cpu()
+                    logits = config.model(torch.cat((img1, img2), dim=0).unsqueeze(0).to('cuda'))[0.55][0].cpu()
                 else:
                     logits = config.model(torch.cat((img1, img2), dim=0).unsqueeze(0).to('cuda'))[0].cpu()
 
             else:
                 if config.multi_out:
-                    logits = config.model(img1.unsqueeze(0).to('cuda'), img2.unsqueeze(0).to('cuda'))[1][0].cpu()
+                    logits = config.model(img1.unsqueeze(0).to('cuda'), img2.unsqueeze(0).to('cuda'))[0.55][0].cpu()
                 else:
                     logits = config.model(img1.unsqueeze(0).to('cuda'), img2.unsqueeze(0).to('cuda'))[0].cpu()
 

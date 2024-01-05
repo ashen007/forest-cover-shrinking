@@ -146,6 +146,8 @@ class FCFERes(nn.Module):
 
         x_out = self.out_block(pad_5(xu_5))
 
+        print(xd_1_fet_ext_b1, xd_1_fet_ext_b2)
+
         return x_out
 
 

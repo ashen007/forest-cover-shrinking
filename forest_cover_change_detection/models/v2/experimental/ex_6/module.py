@@ -135,6 +135,8 @@ class CombineConceptV2(nn.Module):
         xd_2_b1 = self.dwn_block_2(xd_2_fet_ext_b1)  # 1(6, 32, 32, 32)
         s_2 = xd_2_b1.shape
 
+        xd_2_b1 = self.drop(xd_2_b1)
+
         xd_3_fet_ext_b1 = self.feat_ext_block_3(xd_2_b1)
         xd_3_b1 = self.dwn_block_3(xd_3_fet_ext_b1)  # 1(6, 64, 16, 16)
         s_3 = xd_3_b1.shape
@@ -147,12 +149,16 @@ class CombineConceptV2(nn.Module):
         xd_5_b1 = self.dwn_block_5(xd_5_fet_ext_b1)  # (16, 256, 4, 4)
         s_5 = xd_5_b1.shape
 
+        xd_5_b1 = self.drop(xd_5_b1)
+
         # branch 2
         xd_1_fet_ext_b2 = self.feat_ext_block_1(x_2)
         xd_1_b2 = self.dwn_block_1(xd_1_fet_ext_b2)  # 1(6, 16, 64, 64)
 
         xd_2_fet_ext_b2 = self.feat_ext_block_2(xd_1_b2)
         xd_2_b2 = self.dwn_block_2(xd_2_fet_ext_b2)  # 1(6, 32, 32, 32)
+
+        xd_2_b2 = self.drop(xd_2_b2)
 
         xd_3_fet_ext_b2 = self.feat_ext_block_3(xd_2_b2)
         xd_3_b2 = self.dwn_block_3(xd_3_fet_ext_b2)  # 1(6, 64, 16, 16)
@@ -162,6 +168,8 @@ class CombineConceptV2(nn.Module):
 
         xd_5_fet_ext_b2 = self.feat_ext_block_5(xd_4_b2)
         xd_5_b2 = self.dwn_block_5(xd_5_fet_ext_b2)  # (16, 256, 4, 4)
+
+        xd_5_b2 = self.drop(xd_5_b2)
 
         # decoder
         xu_1_b = self.up_feat_ext_block_1((xd_5_b1 - xd_5_b2))
@@ -177,6 +185,7 @@ class CombineConceptV2(nn.Module):
 
         # concat skip connection and up-sampled layer from below
         xu_1 = torch.cat((at_gate_1((xd_4_b1 - xd_4_b2), xu_1_b), pad_1(xu_1)), dim=1)
+        xu_1 = self.drop(xu_1)
 
         xu_2_b = self.up_feat_ext_block_2(xu_1)
         xu_2 = self.up_block_2(xu_2_b)
@@ -205,6 +214,7 @@ class CombineConceptV2(nn.Module):
 
         # concat skip connection and up-sampled layer from below
         xu_3 = torch.cat((at_gate_3((xd_2_b1 - xd_2_b2), xu_3_b), pad_3(xu_3)), dim=1)
+        xu_3 = self.drop(xu_3)
 
         xu_4_b = self.up_feat_ext_block_4(xu_3)
         xu_4 = self.up_block_4(xu_4_b)
@@ -226,7 +236,7 @@ class CombineConceptV2(nn.Module):
 
         x_out = self.out_block(pad_5(xu_5))
 
-        return {1: x_out, by_1: out_1, by_2: out_2, by_3: out_3, by_4: out_4}
+        return {0.55: x_out, by_1: out_1, by_2: out_2, by_3: out_3, by_4: out_4}
 
 
 if __name__ == '__main__':
@@ -237,4 +247,4 @@ if __name__ == '__main__':
     outs = model(t_1, t_2)
 
     for k, v in outs.items():
-        print(2 ** -(k * k), v.shape)
+        print(2 ** -(k), v.shape)

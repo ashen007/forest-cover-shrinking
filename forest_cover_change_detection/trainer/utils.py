@@ -45,10 +45,10 @@ def do_training(*, model, optimizer, inputs, labels, loss_func, multi_out=False)
     if multi_out:
         y_hats = model(inputs)
         loss = 0
-        y_hat = y_hats[1]
+        y_hat = y_hats[0.55]
 
         for k, v in y_hats.items():
-            loss_ = loss_func(v, labels) * (2 ** -(k * k))
+            loss_ = loss_func(v, labels) * (2 ** -(k))
             loss += loss_
     else:
         y_hat = model(inputs)  # this just computed f_Θ(x(i))
@@ -66,10 +66,10 @@ def do_training_with_multiple_in(*, model, optimizer, inputs, labels, loss_func,
     if multi_out:
         y_hats = model(*inputs)
         loss = 0
-        y_hat = y_hats[1]
+        y_hat = y_hats[0.55]
 
         for k, v in y_hats.items():
-            loss_ = loss_func(v, labels) * (2 ** -(k * k))
+            loss_ = loss_func(v, labels) * (2 ** -(k))
             loss += loss_
     else:
         y_hat = model(*inputs)  # this just computed f_Θ(x(i))
