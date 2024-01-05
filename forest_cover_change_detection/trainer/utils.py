@@ -41,9 +41,18 @@ def get_scores(*, model, optimizer, epoch,
             result_str.append(f"{prefix} {name}: {float('NaN')}")
 
 
-def do_training(*, model, optimizer, inputs, labels, loss_func):
-    y_hat = model(inputs)  # this just computed f_Θ(x(i))
-    loss = loss_func(y_hat, labels)  # Compute loss.
+def do_training(*, model, optimizer, inputs, labels, loss_func, multi_out=False):
+    if multi_out:
+        y_hats = model(inputs)
+        loss = 0
+        y_hat = y_hats[1]
+
+        for k, v in y_hats.items():
+            loss_ = loss_func(v, labels) * (2 ** -(k * k))
+            loss += loss_
+    else:
+        y_hat = model(inputs)  # this just computed f_Θ(x(i))
+        loss = loss_func(y_hat, labels)  # Compute loss.
 
     if model.training:
         loss.backward()
@@ -53,9 +62,18 @@ def do_training(*, model, optimizer, inputs, labels, loss_func):
     return y_hat, loss
 
 
-def do_training_with_multiple_in(*, model, optimizer, inputs, labels, loss_func):
-    y_hat = model(*inputs)  # this just computed f_Θ(x(i))
-    loss = loss_func(y_hat, labels)  # Compute loss.
+def do_training_with_multiple_in(*, model, optimizer, inputs, labels, loss_func, multi_out=False):
+    if multi_out:
+        y_hats = model(*inputs)
+        loss = 0
+        y_hat = y_hats[1]
+
+        for k, v in y_hats.items():
+            loss_ = loss_func(v, labels) * (2 ** -(k * k))
+            loss += loss_
+    else:
+        y_hat = model(*inputs)  # this just computed f_Θ(x(i))
+        loss = loss_func(y_hat, labels)  # Compute loss.
 
     if model.training:
         loss.backward()
@@ -68,7 +86,7 @@ def do_training_with_multiple_in(*, model, optimizer, inputs, labels, loss_func)
 def run_epoch(model, optimizer, data_loader,
               loss_func, device, results,
               score_funcs, multi_in, prefix="",
-              desc=None, epoch=None):
+              desc=None, epoch=None, multi_out=False):
     running_loss = []
     y_true = []
     y_pred = []
@@ -81,11 +99,13 @@ def run_epoch(model, optimizer, data_loader,
 
         if not multi_in:
             y_hat, loss = do_training(model=model, optimizer=optimizer, inputs=inputs,
-                                      labels=labels, loss_func=loss_func)
+                                      labels=labels, loss_func=loss_func,
+                                      multi_out=multi_out)
 
         else:
             y_hat, loss = do_training_with_multiple_in(model=model, optimizer=optimizer, inputs=inputs,
-                                                       labels=labels, loss_func=loss_func)
+                                                       labels=labels, loss_func=loss_func,
+                                                       multi_out=multi_out)
 
         # Now we are just grabbing some information we would like to have
         running_loss.append(loss.item())
@@ -138,11 +158,14 @@ def create_trackers(to_track, score_funcs, test_loader, val_loader):
 
 def do_validation(model, optimizer, data_loader,
                   loss_func, device, results,
-                  score_funcs, prefix, desc, epoch, multi_in):
+                  score_funcs, prefix, desc, epoch, multi_in,
+                  multi_out):
     model = model.eval()
 
     with torch.no_grad():
-        run_epoch(model, optimizer, data_loader, loss_func, device, results, score_funcs, multi_in, prefix, desc, epoch)
+        run_epoch(model, optimizer, data_loader, loss_func, device,
+                  results, score_funcs, multi_in, prefix, desc, epoch,
+                  multi_out)
 
 
 def do_change_lr(lr_schedule, results):
@@ -168,7 +191,7 @@ def train_loop(model, loss_func,
                score_funcs=None, epochs=50, device="cpu",
                optimizer=None, lr_schedule=None,
                checkpoint_file="last-checkpoint.pth", keep_best=True,
-               multi_in=False):
+               multi_in=False, multi_out=False):
     if score_funcs is None:
         score_funcs = {}
 
@@ -201,7 +224,7 @@ def train_loop(model, loss_func,
         print(f"Epoch: {epoch}/{epochs}")
 
         run_epoch(model, optimizer, train_loader, loss_func, device, results, score_funcs,
-                  prefix="train", desc="Training", multi_in=multi_in)
+                  prefix="train", desc="Training", multi_in=multi_in, multi_out=multi_out)
 
         results["total time"].append(total_train_time)
         results["epoch"].append(epoch)
@@ -209,11 +232,11 @@ def train_loop(model, loss_func,
 
         if val_loader is not None:
             do_validation(model, optimizer, val_loader, loss_func, device, results, score_funcs, prefix="val",
-                          desc="Validation", epoch=epoch, multi_in=multi_in)
+                          desc="Validation", epoch=epoch, multi_in=multi_in, multi_out=multi_out)
 
         if test_loader is not None:
             do_validation(model, optimizer, test_loader, loss_func, device, results, score_funcs, prefix="test",
-                          desc="Testing", epoch=epoch, multi_in=multi_in)
+                          desc="Testing", epoch=epoch, multi_in=multi_in, multi_out=multi_out)
 
         do_change_lr(lr_schedule, results)
 

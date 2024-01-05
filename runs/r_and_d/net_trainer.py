@@ -26,7 +26,8 @@ class Config:
                  concat,
                  multi_in=False,
                  patched=True,
-                 restore_best=True):
+                 restore_best=True,
+                 multi_out=False):
         # dataloaders
         self.data_root = root
         self.annotations = anno
@@ -48,6 +49,7 @@ class Config:
         self.epochs = epochs
         self.batch_size = batch_size
         self.restore_best = restore_best
+        self.multi_out = multi_out
 
 
 def do(config: Config):
@@ -84,7 +86,8 @@ def do(config: Config):
                              config.loss(w),
                              config.epochs,
                              test_dataloader,
-                             multi_in=config.multi_in)
+                             multi_in=config.multi_in,
+                             multi_out=config.multi_out)
 
     # save results
     results.to_csv('./results.csv', index=False)
@@ -130,10 +133,16 @@ def evaluate(df, config):
             config.model.eval()
 
             if not config.multi_in:
-                logits = config.model(torch.cat((img1, img2), dim=0).unsqueeze(0).to('cuda'))[0].cpu()
+                if config.multi_out:
+                    logits = config.model(torch.cat((img1, img2), dim=0).unsqueeze(0).to('cuda'))[1][0].cpu()
+                else:
+                    logits = config.model(torch.cat((img1, img2), dim=0).unsqueeze(0).to('cuda'))[0].cpu()
 
             else:
-                logits = config.model(img1.unsqueeze(0).to('cuda'), img2.unsqueeze(0).to('cuda'))[0].cpu()
+                if config.multi_out:
+                    logits = config.model(img1.unsqueeze(0).to('cuda'), img2.unsqueeze(0).to('cuda'))[1][0].cpu()
+                else:
+                    logits = config.model(img1.unsqueeze(0).to('cuda'), img2.unsqueeze(0).to('cuda'))[0].cpu()
 
             pred = torch.argmax(torch.sigmoid(logits), dim=0)
 

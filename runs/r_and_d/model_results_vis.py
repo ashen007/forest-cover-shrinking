@@ -3,16 +3,17 @@ import torch
 import matplotlib.pyplot as plt
 import tqdm
 
-from forest_cover_change_detection.models.v2.single_in.fc_ef_res_nst import FCFEResSplitAttention as single_resnest
-from forest_cover_change_detection.models.v2.multi_in.fc_ef_resnst import FCFEResSplitAttention as multi_resnest
+# from forest_cover_change_detection.models.v2.single_in.fc_ef_res_nst import FCFEResSplitAttention as single_resnest
+# from forest_cover_change_detection.models.v2.multi_in.fc_ef_resnst import FCFEResSplitAttention as multi_resnest
+from forest_cover_change_detection.models.v2.experimental.ex_6.module import CombineConceptV2
 from runs.r_and_d.net_trainer import get_img_trio
 
-models = {'fcef_resnest': single_resnest,
-          'siam_resnest': multi_resnest
+models = {'fcef_resnest': CombineConceptV2,
+          # 'siam_resnest': multi_resnest
           }
 
-paths = {'fcef_resnest': './v2/fcef_res_nst/best_model.pth',
-         'siam_resnest': './v2/multi_in/fcef_resnst/best_model.pth'
+paths = {'fcef_resnest': './v2/expeiments/deep_supervision_1/last-checkpoint.pth',
+         # 'siam_resnest': './v2/multi_in/fcef_resnst/best_model.pth'
          }
 
 
@@ -57,7 +58,7 @@ def vis_models_prediction(df, figsize, path=None):
         gts.append(gt)
         preds.append(pred)
 
-    fig, axes = plt.subplots(nrows=len(models), ncols=4, figsize=figsize)
+    fig, axes = plt.subplots(nrows=2, ncols=4, figsize=figsize)
 
     for i in tqdm.tqdm(range(len(models)), desc='plotting'):
         axes[i, 0].imshow(t0_imgs[i].permute(1, 2, 0), cmap='gray')
@@ -81,4 +82,4 @@ def vis_models_prediction(df, figsize, path=None):
 
 if __name__ == '__main__':
     test_df = pd.read_csv('../../data/annotated/test.csv')
-    vis_models_prediction(test_df, (24, 12), './predictions/experiment_01')
+    vis_models_prediction(test_df, (24, 12), './predictions/')
