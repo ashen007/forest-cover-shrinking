@@ -10,7 +10,7 @@ from forest_cover_change_detection.models.v2.experimental.lstm.modules import Se
 
 class MultiPathV1(nn.Module):
 
-    def __init__(self, in_channels, classes, kernel=3):
+    def __init__(self, in_channels, classes, kernel=3, input_shape=128):
         super(MultiPathV1, self).__init__()
         filters = [16, 32, 64, 128, 256]
 
@@ -56,11 +56,11 @@ class MultiPathV1(nn.Module):
         self.dwn_block_5 = nn.MaxPool2d(2)  # (256, 8, 8)
 
         # lstm branch
-        self.lstm1 = SetValues(filters[0], 64, 64)
-        self.lstm2 = SetValues(filters[1], 32, 32)
-        self.lstm3 = SetValues(filters[2], 16, 16)
-        self.lstm4 = SetValues(filters[3], 8, 8)
-        self.lstm5 = SetValues(filters[4], 4, 4)
+        self.lstm1 = SetValues(filters[0], input_shape // 2, input_shape // 2)
+        self.lstm2 = SetValues(filters[1], input_shape // 4, input_shape // 4)
+        self.lstm3 = SetValues(filters[2], input_shape // 8, input_shape // 8)
+        self.lstm4 = SetValues(filters[3], input_shape // 16, input_shape // 16)
+        self.lstm5 = SetValues(filters[4], input_shape // 32, input_shape // 32)
 
         # up sampling
         self.up_feat_ext_block_1 = nn.Sequential(ResidualDownSample(filters[4], filters[4], kernel),

@@ -52,6 +52,9 @@ class Config:
         self.multi_out = multi_out
 
 
+input_size = 256
+
+
 def do(config: Config):
     # create dataset
     data_set = ChangeDetectionDataset(config.data_root,
@@ -96,9 +99,9 @@ def do(config: Config):
 def get_img_trio(path1, path2, label_path):
     img, gt = (read_image(path1), read_image(path2)), read_image(label_path)
 
-    img1 = resize(img[0], size=[256, 256]) / 255.0
-    img2 = resize(img[1], size=[256, 256]) / 255.0
-    gt = resize(gt, size=[256, 256]).squeeze(0) / 255.0
+    img1 = resize(img[0], size=[input_size, input_size]) / 255.0
+    img2 = resize(img[1], size=[input_size, input_size]) / 255.0
+    gt = resize(gt, size=[input_size, input_size]).squeeze(0) / 255.0
 
     return img1, img2, gt
 
