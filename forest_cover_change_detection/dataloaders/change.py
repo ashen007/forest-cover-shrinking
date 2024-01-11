@@ -6,6 +6,7 @@ import os.path
 import pandas as pd
 import torch
 
+from skimage.io import imread
 from torchvision.transforms.v2 import Compose
 from torchvision import io
 from torch.utils.data import Dataset, DataLoader
@@ -70,25 +71,48 @@ class ChangeDetectionDataset(Dataset):
 
 
 class OSCDDataset(Dataset):
+    TRANSFORMS = Compose([
+        ColorJitter(0.5, (1.0, 2.0)),
+        GaussianBlur(19, 0.5),
+        # RandomInvert(0.5),
+        # RandomEqualize(0.5),
+        RandomAdjustSharpness(2, 0.5),
+        RandomRotation(0.5)
+    ])
 
     def __init__(self, path, transformation=True):
-        self.img_dirs = os.listdir(path)
+        self.path = path
+        self.img_dir = os.listdir(path)
         self.transformation = transformation
 
     def __len__(self):
-        return len(self.img_dirs)
+        return len(self.img_dir)
 
-    def __getitem__(self, item):
-        return
+    def __getitem__(self, idx):
+        image = imread(os.path.join(self.path, self.img_dir[idx]))
+        x1, x2, y = image[:3, ::], image[3:6, ::], image[6:, ::]
+
+        x_1_img, x_2_img, y_img = random_crop((torch.from_numpy(x1), torch.from_numpy(x2), torch.from_numpy(y)))
+        y_img = y_img.squeeze(0)
+
+        x_1_img_, x_2_img_, y_img_ = random_flip((x_1_img, x_2_img, y_img))
+
+        if self.transformation:
+            x_1_img_, x_2_img_, y_img_ = self.TRANSFORMS((x_1_img_, x_2_img_, y_img_))
+
+        return (x_1_img_, x_2_img_), y_img_.long()
 
 
 if __name__ == "__main__":
-    data_set = ChangeDetectionDataset('../../data/annotated',
-                                      '../../data/train.csv',
-                                      patched=False,
-                                      concat=False
-                                      )
-    data_loader = DataLoader(data_set, batch_size=8, shuffle=True)
+    data_set = OSCDDataset('../../data/OSCD/annotated')
+    data_loader = DataLoader(data_set, batch_size=1, shuffle=True)
+
+    # data_set = ChangeDetectionDataset('../../data/annotated',
+    #                                   '../../data/annotated/train.csv',
+    #                                   patched=False,
+    #                                   concat=False
+    #                                   )
+    # data_loader = DataLoader(data_set, batch_size=8, shuffle=True)
     x, y = next(iter(data_loader))
 
     print(type(x[0]), x[0].shape)
