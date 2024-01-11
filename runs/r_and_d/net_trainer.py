@@ -7,7 +7,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau, OneCycleLR
 from torch.utils.data import random_split, DataLoader
 from torchvision.io import read_image
 from torchvision.transforms.functional import resize
-from forest_cover_change_detection.dataloaders.change import ChangeDetectionDataset
+from forest_cover_change_detection.dataloaders.change import ChangeDetectionDataset, OSCDDataset
 from forest_cover_change_detection.trainer.train import Compile
 from forest_cover_change_detection.metrics.accuracy import *
 
@@ -55,14 +55,19 @@ class Config:
 input_size = 384
 
 
-def do(config: Config):
+def do(config: Config, dataset=0):
     # create dataset
-    data_set = ChangeDetectionDataset(config.data_root,
+    if dataset == 0:
+        data_set = ChangeDetectionDataset(config.data_root,
                                       config.annotations,
                                       concat=config.concat,
                                       patched=config.patched
                                       )
-    w = torch.load(f'{config.data_root}class_weight.pt')
+        w = torch.load(f'{config.data_root}class_weight.pt')
+
+    elif dataset == 1:
+        data_set = OSCDDataset('../../data/OSCD/annotated')
+        w = torch.load('../../data/OSCD/')
 
     print(f"train image count: {len(data_set)}")
 

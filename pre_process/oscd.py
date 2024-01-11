@@ -2,6 +2,7 @@ import os
 import torch
 import tifffile
 import warnings
+import numpy as np
 
 from tqdm import tqdm
 from image_cut import create_restriction, do_cut, get_rand_centers
@@ -14,6 +15,8 @@ ROOT = '../data/OSCD/raw'
 DST = '../data/OSCD/annotated'
 W, H = (785, 799)
 PATCH_SIZE = (256, 256)
+N_PIX = 0
+TRUE_PIX = 0
 
 if not os.path.isdir(DST):
     os.mkdir(DST)
@@ -49,15 +52,19 @@ def read_img_trio(paths):
     img2 = io.read_image(paths['img2'])
     cm = io.read_image(paths['cm'], io.ImageReadMode.GRAY)
 
+    s = cm.shape
+    t_pix = np.prod(s)
+    true_pix = cm.sum()
+
     I = resize(torch.cat((img1, img2, cm), dim=0), size=[W, H])
 
-    return I
+    return I, (t_pix, true_pix)
 
 
 def create_dataset(paths, c):
-    image = read_img_trio(paths).numpy()
+    image, dtl = read_img_trio(paths)
 
-    return do_cut(image, c, PATCH_SIZE)
+    return do_cut(image.numpy(), c, PATCH_SIZE), dtl
 
 
 if __name__ == '__main__':
@@ -67,6 +74,6 @@ if __name__ == '__main__':
         anchors = get_rand_centers(create_restriction(W, H, 100, PATCH_SIZE), 30)
 
         for i, a in enumerate(anchors):
-            cut = create_dataset(dic, a)
+            cut, _ = create_dataset(dic, a)
             dst_path = os.path.join(DST, f'{dir}_{i}.tiff')
             tifffile.imwrite(dst_path, cut)
