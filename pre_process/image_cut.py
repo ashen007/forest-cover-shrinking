@@ -42,7 +42,11 @@ def do_cut(img: np.ndarray, mid_point: tuple, patch_size: tuple) -> np.ndarray:
     x, y = mid_point
     c = patch_size[0] // 2
 
-    return img[:, (y - c):(y + c), (x - c):(x + c), :]
+    if img.ndim == 3:
+        return img[:, (y - c):(y + c), (x - c):(x + c)]
+
+    else:
+        return img[:, (y - c):(y + c), (x - c):(x + c), :]
 
 
 if __name__ == "__main__":

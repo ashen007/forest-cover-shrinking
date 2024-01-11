@@ -10,6 +10,7 @@
       <excludeFolder url="file://$MODULE_DIR$/data" />
       <excludeFolder url="file://$MODULE_DIR$/data/raw_data" />
     </content>
+    <content url="file://$MODULE_DIR$/data/OSCD/annotated" />
     <content url="file://$MODULE_DIR$/data/annotated" />
     <orderEntry type="jdk" jdkName="Python 3.11" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

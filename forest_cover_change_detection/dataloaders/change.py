@@ -69,6 +69,19 @@ class ChangeDetectionDataset(Dataset):
         return (x, y_img_.long()) if self.concat else ((x_1_img_, x_2_img_), y_img_.long())
 
 
+class OSCDDataset(Dataset):
+
+    def __init__(self, path, transformation=True):
+        self.img_dirs = os.listdir(path)
+        self.transformation = transformation
+
+    def __len__(self):
+        return len(self.img_dirs)
+
+    def __getitem__(self, item):
+        return
+
+
 if __name__ == "__main__":
     data_set = ChangeDetectionDataset('../../data/annotated',
                                       '../../data/train.csv',
