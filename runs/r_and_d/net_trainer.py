@@ -1,5 +1,8 @@
+import os.path
 import pandas as pd
+import torch
 
+from skimage.io import imread
 from dataclasses import dataclass
 from tqdm.notebook import tqdm
 from torch.optim import AdamW
@@ -10,6 +13,7 @@ from torchvision.transforms.functional import resize
 from forest_cover_change_detection.dataloaders.change import ChangeDetectionDataset, OSCDDataset
 from forest_cover_change_detection.trainer.train import Compile
 from forest_cover_change_detection.metrics.accuracy import *
+from pre_process.run_time_augmentation import random_crop
 
 
 @dataclass
@@ -39,11 +43,11 @@ class Config:
         self.in_channels = 6
         self.kernel = 3
         self.classes = 2
-        self.lr = 0.0001
+        self.lr = 0.001
         self.model = model
         self.optimizer = AdamW(self.model.parameters(), lr=self.lr)
-        self.scheduler = OneCycleLR(self.optimizer, max_lr=0.001, epochs=epochs, steps_per_epoch=49) # only for tuning
-        # self.scheduler = ReduceLROnPlateau(self.optimizer, factor=0.15)
+        # self.scheduler = OneCycleLR(self.optimizer, max_lr=0.001, epochs=epochs, steps_per_epoch=49)  # only for tuning
+        self.scheduler = ReduceLROnPlateau(self.optimizer, factor=0.15)
         self.multi_in = multi_in
         self.loss = loss
         self.epochs = epochs
@@ -59,15 +63,19 @@ def do(config: Config, dataset=0):
     # create dataset
     if dataset == 0:
         data_set = ChangeDetectionDataset(config.data_root,
-                                      config.annotations,
-                                      concat=config.concat,
-                                      patched=config.patched
-                                      )
+                                          config.annotations,
+                                          concat=config.concat,
+                                          patched=config.patched
+                                          )
         w = torch.load(f'{config.data_root}class_weight.pt')
+        print(f"Dataset: {data_set.__class__.__name__}")
+        print(f'weights: {w.numpy()}')
 
     elif dataset == 1:
-        data_set = OSCDDataset('../../data/OSCD/annotated')
-        w = torch.load('../../data/OSCD/')
+        data_set = OSCDDataset(os.path.join(config.data_root, 'annotated'))
+        w = torch.load(os.path.join(config.data_root, 'class_weight.pt'))
+        print(f"Dataset: {data_set.__class__.__name__}")
+        print(f'weights: {w.numpy()}')
 
     print(f"train image count: {len(data_set)}")
 
@@ -106,15 +114,17 @@ def get_img_trio(path1, path2, label_path):
 
     img1 = resize(img[0], size=[input_size, input_size]) / 255.0
     img2 = resize(img[1], size=[input_size, input_size]) / 255.0
-    gt = resize(gt, size=[input_size, input_size]).squeeze(0) / 255.0
+    gt = resize(gt, size=[input_size, input_size]).squeeze(0)
+
+    gt = gt != 0
 
     return img1, img2, gt
 
 
 def evaluate(df, config):
     acc_test = []
-    change_acc = []
-    no_change_acc = []
+    # change_acc = []
+    # no_change_acc = []
     p = []
     r = []
     d = []
@@ -269,3 +279,75 @@ def evaluate2(df, config):
     metrics['kappa'] = k
 
     metrics.to_csv('./metric_eval_v2.csv', index=False)
+
+
+def evaluate_oscd(path, config):
+    acc_test = []
+    p = []
+    r = []
+    d = []
+    k = []
+    metrics = pd.DataFrame()
+    size = 128
+    step = 128
+
+    # restore best checkpoint
+    if config.restore_best:
+        state = torch.load(f"./best_model.pth")
+        config.model.load_state_dict(state['model_state_dict'])
+        config.model = config.model.cuda()
+
+    else:
+        state = torch.load("./last-checkpoint.pth")
+        config.model.load_state_dict(state['model_state_dict'])
+        config.model = config.model.cuda()
+
+    for f in tqdm(os.listdir(path)):
+        image = imread(os.path.join(path, f))
+        img_1, img_2, gt_ = image[:3, ::], image[3:6, ::], image[6:, ::]
+        img_1 = img_1 / 255.0
+        img_2 = img_2 / 255.0
+        gt_ = gt_ != 0
+
+        img_1 = torch.from_numpy(img_1).to(torch.float)
+        img_2 = torch.from_numpy(img_2).to(torch.float)
+        gt_ = torch.from_numpy(gt_).to(torch.long)
+
+        image_ = torch.cat((img_1, img_2, gt_), dim=0)
+        patches = image_.unfold(1, size, step).unfold(2, size, step)
+        patches = patches.reshape(7, 4, size, step)
+
+        for t in range(patches.shape[1]):
+            img1, img2, gt = patches[:3, t, ::], patches[3:6, t, ::], patches[6:, t, ::]
+
+            with torch.no_grad():
+                config.model.eval()
+
+                if not config.multi_in:
+                    if config.multi_out:
+                        logits = config.model(torch.cat((img1, img2), dim=0).unsqueeze(0).to('cuda'))[0.55][0].cpu()
+                    else:
+                        logits = config.model(torch.cat((img1, img2), dim=0).unsqueeze(0).to('cuda'))[0].cpu()
+
+                else:
+                    if config.multi_out:
+                        logits = config.model(img1.unsqueeze(0).to('cuda'), img2.unsqueeze(0).to('cuda'))[0.55][0].cpu()
+                    else:
+                        logits = config.model(img1.unsqueeze(0).to('cuda'), img2.unsqueeze(0).to('cuda'))[0].cpu()
+
+                pred = torch.argmax(torch.sigmoid(logits), dim=0)
+
+            tp_, tn_, fp_, fn_ = calculate_confusion(gt, pred)
+            acc_test.append(pixel_accuracy(tp_, tn_, fp_, fn_).numpy().tolist())
+            p.append(precision(tp_, tn_, fp_, fn_).numpy().tolist())
+            r.append(recall(tp_, tn_, fp_, fn_).numpy().tolist())
+            d.append(dice(tp_, tn_, fp_, fn_).numpy().tolist())
+            k.append(kappa(tp_, tn_, fp_, fn_).numpy().tolist())
+
+    metrics['overall accuracy'] = acc_test
+    metrics['precision'] = p
+    metrics['recall'] = r
+    metrics['dice'] = d
+    metrics['kappa'] = k
+
+    metrics.to_csv('./metric_eval_oscd.csv', index=False)

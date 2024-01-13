@@ -92,7 +92,11 @@ class OSCDDataset(Dataset):
         image = imread(os.path.join(self.path, self.img_dir[idx]))
         x1, x2, y = image[:3, ::], image[3:6, ::], image[6:, ::]
 
-        x_1_img, x_2_img, y_img = random_crop((torch.from_numpy(x1), torch.from_numpy(x2), torch.from_numpy(y)))
+        x1 = x1 / 255.0
+        x2 = x2 / 255.0
+        y = y != 0
+
+        x_1_img, x_2_img, y_img = torch.from_numpy(x1), torch.from_numpy(x2), torch.from_numpy(y) # random_crop(())
         y_img = y_img.squeeze(0)
 
         x_1_img_, x_2_img_, y_img_ = random_flip((x_1_img, x_2_img, y_img))
@@ -100,12 +104,12 @@ class OSCDDataset(Dataset):
         if self.transformation:
             x_1_img_, x_2_img_, y_img_ = self.TRANSFORMS((x_1_img_, x_2_img_, y_img_))
 
-        return (x_1_img_, x_2_img_), y_img_.long()
+        return (x_1_img_.to(torch.float), x_2_img_.to(torch.float)), y_img_.long()
 
 
 if __name__ == "__main__":
     data_set = OSCDDataset('../../data/OSCD/annotated')
-    data_loader = DataLoader(data_set, batch_size=1, shuffle=True)
+    data_loader = DataLoader(data_set, batch_size=32, shuffle=True)
 
     # data_set = ChangeDetectionDataset('../../data/annotated',
     #                                   '../../data/annotated/train.csv',
@@ -115,6 +119,6 @@ if __name__ == "__main__":
     # data_loader = DataLoader(data_set, batch_size=8, shuffle=True)
     x, y = next(iter(data_loader))
 
-    print(type(x[0]), x[0].shape)
-    print(type(x[1]), x[1].shape)
-    print(type(y), y.shape)
+    print(type(x[0]), x[0].shape, x[0].dtype)
+    print(type(x[1]), x[1].shape, x[1].dtype)
+    print(type(y), y.shape, y.dtype)
