@@ -46,8 +46,8 @@ class Config:
         self.lr = 0.001
         self.model = model
         self.optimizer = AdamW(self.model.parameters(), lr=self.lr)
-        # self.scheduler = OneCycleLR(self.optimizer, max_lr=0.001, epochs=epochs, steps_per_epoch=49)  # only for tuning
-        self.scheduler = ReduceLROnPlateau(self.optimizer, factor=0.15)
+        # self.scheduler = OneCycleLR(self.optimizer, max_lr=0.0001, epochs=epochs, steps_per_epoch=81)  # only for tuning
+        self.scheduler = ReduceLROnPlateau(self.optimizer, factor=0.1)
         self.multi_in = multi_in
         self.loss = loss
         self.epochs = epochs
@@ -67,15 +67,15 @@ def do(config: Config, dataset=0):
                                           concat=config.concat,
                                           patched=config.patched
                                           )
-        w = torch.load(f'{config.data_root}class_weight.pt')
+        w = torch.load(f'{config.data_root}class_weight.pt').to('cuda')
         print(f"Dataset: {data_set.__class__.__name__}")
-        print(f'weights: {w.numpy()}')
+        # print(f'weights: {w.detach().numpy()}')
 
     elif dataset == 1:
         data_set = OSCDDataset(os.path.join(config.data_root, 'annotated'))
-        w = torch.load(os.path.join(config.data_root, 'class_weight.pt'))
+        w = torch.load(os.path.join(config.data_root, 'class_weight.pt')).to('cuda')
         print(f"Dataset: {data_set.__class__.__name__}")
-        print(f'weights: {w.numpy()}')
+        # print(f'weights: {w.detach().numpy()}')
 
     print(f"train image count: {len(data_set)}")
 
@@ -288,8 +288,9 @@ def evaluate_oscd(path, config):
     d = []
     k = []
     metrics = pd.DataFrame()
-    size = 128
-    step = 128
+    # size = 96
+    # step = 96
+    n_samples = len(os.listdir(path))
 
     # restore best checkpoint
     if config.restore_best:
@@ -302,47 +303,49 @@ def evaluate_oscd(path, config):
         config.model.load_state_dict(state['model_state_dict'])
         config.model = config.model.cuda()
 
-    for f in tqdm(os.listdir(path)):
+    for i in tqdm(range(n_samples)):
+        f = os.listdir(path)[i]
         image = imread(os.path.join(path, f))
         img_1, img_2, gt_ = image[:3, ::], image[3:6, ::], image[6:, ::]
-        img_1 = img_1 / 255.0
-        img_2 = img_2 / 255.0
-        gt_ = gt_ != 0
+        # img_1 = img_1 / 255.0
+        # img_2 = img_2 / 255.0
+        # gt_ = gt_ / 255.0
 
-        img_1 = torch.from_numpy(img_1).to(torch.float)
-        img_2 = torch.from_numpy(img_2).to(torch.float)
-        gt_ = torch.from_numpy(gt_).to(torch.long)
+        img1 = torch.from_numpy(img_1).to(torch.float)
+        img2 = torch.from_numpy(img_2).to(torch.float)
+        gt = torch.from_numpy(gt_).to(torch.long)
 
-        image_ = torch.cat((img_1, img_2, gt_), dim=0)
-        patches = image_.unfold(1, size, step).unfold(2, size, step)
-        patches = patches.reshape(7, 4, size, step)
+        # image_ = torch.cat((img_1, img_2, gt_), dim=0)
+        #
+        # patches = image_.unfold(1, size, step).unfold(2, size, step)
+        # patches = patches.reshape(7, 4, size, step)
 
-        for t in range(patches.shape[1]):
-            img1, img2, gt = patches[:3, t, ::], patches[3:6, t, ::], patches[6:, t, ::]
+        # for t in range(patches.shape[1]):
+        #     img1, img2, gt = patches[:3, t, ::], patches[3:6, t, ::], patches[6:, t, ::]
 
-            with torch.no_grad():
-                config.model.eval()
+        with torch.no_grad():
+            config.model.eval()
 
-                if not config.multi_in:
-                    if config.multi_out:
-                        logits = config.model(torch.cat((img1, img2), dim=0).unsqueeze(0).to('cuda'))[0.55][0].cpu()
-                    else:
-                        logits = config.model(torch.cat((img1, img2), dim=0).unsqueeze(0).to('cuda'))[0].cpu()
-
+            if not config.multi_in:
+                if config.multi_out:
+                    logits = config.model(torch.cat((img1, img2), dim=0).unsqueeze(0).to('cuda'))[0.55][0].cpu()
                 else:
-                    if config.multi_out:
-                        logits = config.model(img1.unsqueeze(0).to('cuda'), img2.unsqueeze(0).to('cuda'))[0.55][0].cpu()
-                    else:
-                        logits = config.model(img1.unsqueeze(0).to('cuda'), img2.unsqueeze(0).to('cuda'))[0].cpu()
+                    logits = config.model(torch.cat((img1, img2), dim=0).unsqueeze(0).to('cuda'))[0].cpu()
 
-                pred = torch.argmax(torch.sigmoid(logits), dim=0)
+            else:
+                if config.multi_out:
+                    logits = config.model(img1.unsqueeze(0).to('cuda'), img2.unsqueeze(0).to('cuda'))[0.55][0].cpu()
+                else:
+                    logits = config.model(img1.unsqueeze(0).to('cuda'), img2.unsqueeze(0).to('cuda'))[0].cpu()
 
-            tp_, tn_, fp_, fn_ = calculate_confusion(gt, pred)
-            acc_test.append(pixel_accuracy(tp_, tn_, fp_, fn_).numpy().tolist())
-            p.append(precision(tp_, tn_, fp_, fn_).numpy().tolist())
-            r.append(recall(tp_, tn_, fp_, fn_).numpy().tolist())
-            d.append(dice(tp_, tn_, fp_, fn_).numpy().tolist())
-            k.append(kappa(tp_, tn_, fp_, fn_).numpy().tolist())
+            pred = torch.argmax(torch.sigmoid(logits), dim=0)
+
+        tp_, tn_, fp_, fn_ = calculate_confusion(gt, pred)
+        acc_test.append(pixel_accuracy(tp_, tn_, fp_, fn_).numpy().tolist())
+        p.append(precision(tp_, tn_, fp_, fn_).numpy().tolist())
+        r.append(recall(tp_, tn_, fp_, fn_).numpy().tolist())
+        d.append(dice(tp_, tn_, fp_, fn_).numpy().tolist())
+        k.append(kappa(tp_, tn_, fp_, fn_).numpy().tolist())
 
     metrics['overall accuracy'] = acc_test
     metrics['precision'] = p

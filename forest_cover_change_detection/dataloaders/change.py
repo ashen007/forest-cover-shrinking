@@ -43,9 +43,12 @@ class ChangeDetectionDataset(Dataset):
         img2_path = os.path.join(self.root, self.label_file.loc[idx, 'dir'], x_2)
         label_path = os.path.join(self.root, y)
 
-        x_1_img = io.read_image(img1_path) / 255.0
-        x_2_img = io.read_image(img2_path) / 255.0
+        x_1_img = io.read_image(img1_path)
+        x_2_img = io.read_image(img2_path)
         y_img = io.read_image(label_path) != 0
+
+        x_1_img = (x_1_img - x_1_img.mean()) / x_1_img.std()
+        x_2_img = (x_2_img - x_2_img.mean()) / x_2_img.std()
 
         if self.patched:
             x_1_img = x_1_img[:, self.label_file.loc[idx, 'x1']:self.label_file.loc[idx, 'x2'],
@@ -92,9 +95,9 @@ class OSCDDataset(Dataset):
         image = imread(os.path.join(self.path, self.img_dir[idx]))
         x1, x2, y = image[:3, ::], image[3:6, ::], image[6:, ::]
 
-        x1 = x1 / 255.0
-        x2 = x2 / 255.0
-        y = y != 0
+        # x1 = x1 / 255.0
+        # x2 = x2 / 255.0
+        # y = y != 0
 
         x_1_img, x_2_img, y_img = torch.from_numpy(x1), torch.from_numpy(x2), torch.from_numpy(y) # random_crop(())
         y_img = y_img.squeeze(0)

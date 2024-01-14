@@ -17,5 +17,5 @@ if __name__ == "__main__":
                     multi_in=True,
                     patched=False)
 
-    # do(config, dataset=1)
+    do(config, dataset=1)
     evaluate_oscd('../../../../../data/OSCD/test', config)

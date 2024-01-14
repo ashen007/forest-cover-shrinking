@@ -1,3 +1,5 @@
 /data/archive
 /data/preprocessed/
 /data/raw_data/
+/runs/r_and_d/v2/compare/comb_cnpt_oscd/best_model.pth
+/runs/r_and_d/v2/compare/fcef_resnst_se_oscd/best_model.pth
